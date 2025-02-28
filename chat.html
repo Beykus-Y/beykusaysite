@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat</title>
+    <link rel="stylesheet" href="styles/chat.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/tokyo-night-dark.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Code&display=swap">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script type="module" src="scripts/chat.js"></script>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-sidebar">
+            <div class="sidebar-header">
+                <button class="new-chat-btn">Новый чат</button>
+            </div>
+            <div class="chats-list">
+                <!-- Чаты будут добавлены через JavaScript -->
+            </div>
+        </div>
+        <div class="chat-main">
+            <div class="chat-header">
+                <div class="user-profile">
+                    <span></span>
+                    <select id="modelSelect" class="model-select">
+                        <option value="">Загрузка моделей...</option>
+                    </select>
+                </div>
+                <div class="header-actions">
+                    <button class="theme-toggle" title="Переключить тему">🌓</button>
+                    <button class="reset-chat-btn" title="Сбросить чат">🔄</button>
+                </div>
+            </div>
+            <div class="messages-container">
+                <!-- Сообщения будут добавлены через JavaScript -->
+            </div>
+            <div class="input-container">
+                <form id="messageForm">
+                    <textarea 
+                        placeholder="Введите сообщение..." 
+                        rows="1"
+                        maxlength="2000"
+                    ></textarea>
+                    <div class="input-actions">
+                        <button type="button" class="attach-btn" title="Прикрепить файл">📎</button>
+                        <button type="submit" class="send-btn" title="Отправить">➤</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BeykuSay - Авторизация</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/auth.css">
+</head>
+<body class="auth-page">
+    <div class="auth-container">
+        <div class="auth-box">
+            <div class="auth-header">
+                <div class="logo">BeykuSay</div>
+                <div class="auth-tabs">
+                    <button class="tab-btn active" data-tab="login">Вход</button>
+                    <button class="tab-btn" data-tab="register">Регистрация</button>
+                </div>
+            </div>
+
+            <!-- Форма входа -->
+            <form id="loginForm" class="auth-form active">
+                <div class="form-group">
+                    <label for="loginEmail">Email</label>
+                    <input type="email" id="loginEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Пароль</label>
+                    <div class="password-input">
+                        <input type="password" id="loginPassword" required>
+                        <button type="button" class="toggle-password">👁️</button>
+                    </div>
+                </div>
+                <div class="form-group remember-me">
+                    <label>
+                        <input type="checkbox"> Запомнить меня
+                    </label>
+                    <a href="#" class="forgot-password">Забыли пароль?</a>
+                </div>
+                <button type="submit" class="auth-submit">Войти</button>
+                <div class="social-auth">
+                    <p>Или войдите через</p>
+                    <div class="social-buttons">
+                        <button type="button" class="social-btn google">
+                            <img src="assets/google-icon.svg" alt="Google">
+                            Google
+                        </button>
+                        <button type="button" class="social-btn github">
+                            <img src="assets/github-icon.svg" alt="GitHub">
+                            GitHub
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Форма регистрации -->
+            <form id="registerForm" class="auth-form">
+                <div class="form-group">
+                    <label for="registerName">Имя</label>
+                    <input type="text" id="registerName" required>
+                </div>
+                <div class="form-group">
+                    <label for="registerEmail">Email</label>
+                    <input type="email" id="registerEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="registerPassword">Пароль</label>
+                    <div class="password-input">
+                        <input type="password" id="registerPassword" required>
+                        <button type="button" class="toggle-password">👁️</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="confirmPassword">Подтвердите пароль</label>
+                    <div class="password-input">
+                        <input type="password" id="confirmPassword" required>
+                        <button type="button" class="toggle-password">👁️</button>
+                    </div>
+                </div>
+                <div class="form-group terms">
+                    <label>
+                        <input type="checkbox" required>
+                        Я согласен с <a href="#">условиями использования</a>
+                    </label>
+                </div>
+                <button type="submit" class="auth-submit">Зарегистрироваться</button>
+            </form>
+        </div>
+    </div>
+    <script src="scripts/auth.js"></script>
+</body>
+</html> 
