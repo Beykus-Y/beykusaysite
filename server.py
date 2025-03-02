@@ -354,7 +354,7 @@ def index():
         return "Сервер работает, но index.html не найден", 404
     
 @app.route('/auth')
-def index():
+def auth():
     logger.debug("Запрос к /auth")
     try:
         return app.send_static_file('auth.html')
