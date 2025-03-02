@@ -352,6 +352,15 @@ def index():
     except Exception as e:
         logger.error(f"Ошибка загрузки index.html: {e}")
         return "Сервер работает, но index.html не найден", 404
+    
+@app.route('/auth')
+def index():
+    logger.debug("Запрос к /auth")
+    try:
+        return app.send_static_file('auth.html')
+    except Exception as e:
+        logger.error(f"Ошибка загрузки auth.html: {e}")
+        return "Сервер работает, но auth.html не найден", 404
 
 # Запуск сервера
 if __name__ == '__main__':
