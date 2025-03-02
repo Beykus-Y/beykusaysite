@@ -14,7 +14,15 @@ from api.gemini_api import GeminiChat, GeminiModel
 
 # Инициализация приложения
 app = Flask(__name__, static_folder='.', static_url_path='')
-CORS(app, resources={r"/api/*": {"origins": "*"}})  # Разрешить все источники для тестов
+
+# Настройка CORS
+CORS(app, resources={
+    r"/api/*": {
+        "origins": ["http://localhost:8000", "http://127.0.0.1:8000", "*"],  # Разрешённые источники
+        "methods": ["GET", "POST", "OPTIONS"],  # Разрешённые методы
+        "allow_headers": ["Content-Type", "Authorization"]  # Разрешённые заголовки
+    }
+})
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -32,6 +40,11 @@ def add_cors_headers(response):
     response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
     return response
+
+# Обработка OPTIONS запросов вручную
+@app.route('/api/<path:path>', methods=['OPTIONS'])
+def handle_options(path):
+    return '', 204
 
 # Инициализация базы данных
 def init_db():
@@ -343,9 +356,9 @@ def change_model(user, chat_id):
         logger.error(f"Ошибка смены модели: {e}")
         return jsonify({'error': 'Ошибка сервера'}), 500
 
-# Статические файлы
+# Главная страница
 @app.route('/')
-def index():
+def serve_index():
     logger.debug("Запрос к /")
     try:
         return app.send_static_file('index.html')
