@@ -5,16 +5,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('loginForm');
     const registerForm = document.getElementById('registerForm');
 
+    // Базовый URL сервера берётся из текущего хоста
+    const BASE_URL = `${window.location.protocol}//${window.location.host}`;
+
     // Переключение между вкладками
     tabButtons.forEach(button => {
         button.addEventListener('click', () => {
             const targetTab = button.dataset.tab;
-            
-            // Активация кнопки
             tabButtons.forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
-            
-            // Показ соответствующей формы
             authForms.forEach(form => {
                 form.classList.remove('active');
                 if (form.id === `${targetTab}Form`) {
@@ -44,7 +43,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const email = loginForm.querySelector('#loginEmail').value;
         const password = loginForm.querySelector('#loginPassword').value;
 
-        // Базовая валидация
         if (!validateEmail(email)) {
             showError('Пожалуйста, введите корректный email');
             return;
@@ -56,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const response = await fetch('http://localhost:8000/api/login', {
+            const response = await fetch(`${BASE_URL}/api/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -67,14 +65,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.message);
+                throw new Error(data.message || 'Ошибка входа');
             }
 
-            // Сохраняем токен
             localStorage.setItem('token', data.token);
             localStorage.setItem('user', JSON.stringify(data.user));
-
-            // Перенаправление на чат
             window.location.href = '/chat.html';
         } catch (error) {
             showError(error.message);
@@ -89,7 +84,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const password = registerForm.querySelector('#registerPassword').value;
         const confirmPassword = registerForm.querySelector('#confirmPassword').value;
 
-        // Валидация
         if (name.length < 2) {
             showError('Имя должно содержать минимум 2 символа');
             return;
@@ -111,7 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const response = await fetch('http://localhost:8000/api/register', {
+            const response = await fetch(`${BASE_URL}/api/register`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -122,11 +116,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.message);
+                throw new Error(data.message || 'Ошибка регистрации');
             }
 
             // Автоматический вход после регистрации
-            const loginResponse = await fetch('http://localhost:8000/api/login', {
+            const loginResponse = await fetch(`${BASE_URL}/api/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -137,14 +131,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const loginData = await loginResponse.json();
 
             if (!loginResponse.ok) {
-                throw new Error(loginData.message);
+                throw new Error(loginData.message || 'Ошибка входа');
             }
 
-            // Сохраняем токен
             localStorage.setItem('token', loginData.token);
             localStorage.setItem('user', JSON.stringify(loginData.user));
-
-            // Перенаправление на чат
             window.location.href = '/chat.html';
         } catch (error) {
             showError(error.message);
@@ -157,22 +148,13 @@ document.addEventListener('DOMContentLoaded', () => {
         return re.test(email);
     }
 
-    // Улучшенный вывод ошибок
     function showError(message) {
         const errorDiv = document.createElement('div');
         errorDiv.className = 'error-message';
         errorDiv.textContent = message;
-        
-        // Удаляем предыдущие сообщения об ошибках
         document.querySelectorAll('.error-message').forEach(el => el.remove());
-        
-        // Добавляем новое сообщение
         const activeForm = document.querySelector('.auth-form.active');
         activeForm.insertBefore(errorDiv, activeForm.firstChild);
-        
-        // Автоматически удаляем сообщение через 5 секунд
-        setTimeout(() => {
-            errorDiv.remove();
-        }, 5000);
+        setTimeout(() => errorDiv.remove(), 5000);
     }
-}); 
+});
