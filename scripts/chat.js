@@ -12,6 +12,9 @@ marked.setOptions({
     gfm: true
 });
 
+// Базовый URL сервера
+const BASE_URL = `${window.location.protocol}//${window.location.host}`;
+
 // Вспомогательные функции
 function escapeHtml(text) {
     const div = document.createElement('div');
@@ -34,7 +37,6 @@ function addMessage(message) {
     
     const time = new Date(message.created_at).toLocaleTimeString();
     
-    // Используем marked для рендеринга Markdown
     const formattedContent = message.is_bot ? 
         marked.parse(message.content) : 
         `<p>${escapeHtml(message.content)}</p>`;
@@ -48,7 +50,6 @@ function addMessage(message) {
         ${!message.is_bot ? '<div class="message-avatar">👤</div>' : ''}
     `;
     
-    // Обработка ссылок
     messageElement.querySelectorAll('a').forEach(link => {
         link.target = '_blank';
         link.rel = 'noopener noreferrer';
@@ -58,16 +59,13 @@ function addMessage(message) {
         messagesContainer.appendChild(messageElement);
     }
 
-    // Прокрутка к новому сообщению
     messageElement.scrollIntoView({ behavior: 'smooth', block: 'end' });
     
-    // Подсветка синтаксиса кода
     messageElement.querySelectorAll('pre code').forEach(block => {
         hljs.highlightBlock(block);
     });
 }
 
-// Добавьте в начало файла после импортов
 function initTheme() {
     const themeToggle = document.querySelector('.theme-toggle');
     const savedTheme = localStorage.getItem('theme') || 'light';
@@ -82,10 +80,8 @@ function initTheme() {
     });
 }
 
-// Основной код
 document.addEventListener('DOMContentLoaded', async () => {
     initTheme();
-    // Проверка авторизации
     const token = localStorage.getItem('token');
     const user = JSON.parse(localStorage.getItem('user'));
 
@@ -94,7 +90,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // Отображаем имя пользователя
     const userProfileName = document.querySelector('.user-profile span');
     if (userProfileName) {
         userProfileName.textContent = user.name;
@@ -103,10 +98,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     let currentChatId = null;
     let currentModel = null;
 
-    // Загрузка чатов
     async function loadChats() {
         try {
-            const response = await fetch('http://localhost:8000/api/chats', {
+            const response = await fetch(`${BASE_URL}/api/chats`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -145,21 +139,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                 chatsList.appendChild(chatElement);
             });
 
-            // Если есть чаты, загружаем первый
             if (chats.length > 0 && !currentChatId) {
                 loadMessages(chats[0].id);
             }
-
         } catch (error) {
             console.error('Ошибка загрузки чатов:', error);
         }
     }
 
-    // Загрузка сообщений чата
     async function loadMessages(chatId) {
         currentChatId = chatId;
         try {
-            const response = await fetch(`http://localhost:8000/api/chats/${chatId}/messages`, {
+            const response = await fetch(`${BASE_URL}/api/chats/${chatId}/messages`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -179,12 +170,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Создание нового чата
     const newChatBtn = document.querySelector('.new-chat-btn');
     if (newChatBtn) {
         newChatBtn.addEventListener('click', async () => {
             try {
-                const response = await fetch('http://localhost:8000/api/chats', {
+                const response = await fetch(`${BASE_URL}/api/chats`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -206,13 +196,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // Получаем элементы формы
     const messageForm = document.getElementById('messageForm');
     const messageInput = messageForm.querySelector('textarea');
 
-    console.log('Form elements:', { messageForm, messageInput }); // Добавляем лог
+    console.log('Form elements:', { messageForm, messageInput });
 
-    // Обновим обработчик отправки сообщения
     messageForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         if (!currentChatId) {
@@ -224,14 +212,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!content) return;
 
         try {
-            // Добавляем сообщение пользователя
             addMessage({
                 content: content,
                 is_bot: false,
                 created_at: new Date().toISOString()
             });
 
-            // Создаем placeholder для ответа бота
             const botMessageId = 'bot-message-' + Date.now();
             addMessage({
                 id: botMessageId,
@@ -243,8 +229,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             messageInput.value = '';
             messageInput.style.height = 'auto';
 
-            // Отправляем сообщение через POST запрос
-            const response = await fetch(`http://localhost:8000/api/chats/${currentChatId}/messages`, {
+            const response = await fetch(`${BASE_URL}/api/chats/${currentChatId}/messages`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -283,12 +268,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                             fullResponse += data.content;
                             botMessageText.innerHTML = marked.parse(fullResponse);
 
-                            // Подсветка кода
                             botMessage.querySelectorAll('pre code').forEach(block => {
                                 hljs.highlightBlock(block);
                             });
 
-                            // Прокрутка к последнему сообщению
                             botMessage.scrollIntoView({ behavior: 'smooth', block: 'end' });
                         } catch (error) {
                             console.error('Ошибка обработки данных:', error);
@@ -296,13 +279,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                 }
             }
-
         } catch (error) {
             console.error('Ошибка отправки сообщения:', error);
         }
     });
 
-    // Обработчик Enter для отправки
     messageInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -310,7 +291,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Добавьте функцию для обновления сообщений
     function updateMessages(messages) {
         const messagesContainer = document.querySelector('.messages-container');
         messagesContainer.innerHTML = '';
@@ -322,10 +302,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
 
-    // Загрузка списка моделей
     async function loadModels() {
         try {
-            const response = await fetch('http://localhost:8000/api/models', {
+            const response = await fetch(`${BASE_URL}/api/models`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -337,7 +316,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 `<option value="${model.id}">${model.name}</option>`
             ).join('');
             
-            // Установка текущей модели
             currentModel = data.models[0].id;
             modelSelect.value = currentModel;
         } catch (error) {
@@ -345,13 +323,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Обработчик смены модели
     document.getElementById('modelSelect').addEventListener('change', async (e) => {
         const newModel = e.target.value;
         if (!currentChatId || newModel === currentModel) return;
         
         try {
-            const response = await fetch(`http://localhost:8000/api/chats/${currentChatId}/model`, {
+            const response = await fetch(`${BASE_URL}/api/chats/${currentChatId}/model`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -362,7 +339,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             if (response.ok) {
                 currentModel = newModel;
-                // Добавляем системное сообщение об изменении модели
                 addMessage({
                     content: `Модель изменена на ${newModel}`,
                     is_bot: true,
@@ -374,17 +350,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Инициализация
     await loadModels();
     await loadChats();
 
-    // Автоматическое изменение высоты текстового поля
     messageInput.addEventListener('input', function() {
         this.style.height = 'auto';
         this.style.height = this.scrollHeight + 'px';
     });
 
-    // Мобильная версия
     if (window.innerWidth <= 768) {
         const sidebar = document.querySelector('.chat-sidebar');
         const toggleButton = document.createElement('button');
@@ -397,10 +370,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // Добавьте функцию сброса чата
     async function resetChat(chatId) {
         try {
-            const response = await fetch(`http://localhost:8000/api/chats/${chatId}/reset`, {
+            const response = await fetch(`${BASE_URL}/api/chats/${chatId}/reset`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -416,7 +388,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Добавьте обработчик для кнопки сброса
     document.querySelector('.reset-chat-btn').addEventListener('click', () => {
         if (currentChatId) {
             resetChat(currentChatId);
@@ -424,5 +395,4 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 });
 
-// Экспортируем функции, если они нужны в других модулях
-export { addMessage, escapeHtml }; 
+export { addMessage, escapeHtml };
