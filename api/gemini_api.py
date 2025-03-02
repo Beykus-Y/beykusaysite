@@ -6,7 +6,6 @@ from enum import Enum
 import markdown
 import bleach
 import re
-from flask import Response
 import json
 
 logger = logging.getLogger(__name__)
@@ -21,81 +20,86 @@ class GeminiModel(Enum):
 
 # Конфигурация API
 GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
+if not GOOGLE_API_KEY:
+    logger.error("GOOGLE_API_KEY не найден в переменных окружения")
+    raise ValueError("GOOGLE_API_KEY не настроен")
 genai.configure(api_key=GOOGLE_API_KEY)
 
 class GeminiChat:
     def __init__(self, model_name=GeminiModel.FLASH_8B.value):
-        self.model = genai.GenerativeModel(model_name)
-        self.chat = self.model.start_chat(history=[])
-    
+        try:
+            self.model = genai.GenerativeModel(model_name)
+            self.chat = self.model.start_chat(history=[])
+            logger.debug(f"Инициализирован чат с моделью: {model_name}")
+        except Exception as e:
+            logger.error(f"Ошибка инициализации модели: {str(e)}")
+            raise
+
     def format_markdown(self, text):
-        # Обработка блоков кода
-        text = re.sub(r'```(\w+)?\n(.*?)\n```', r'```\1\n\2\n```', text, flags=re.DOTALL)
-        
-        # Обработка инлайн кода
-        text = re.sub(r'`([^`]+)`', r'`\1`', text)
-        
-        # Обработка списков
-        text = re.sub(r'^\s*[-*+]\s', '• ', text, flags=re.MULTILINE)
-        
-        # Конвертация Markdown в HTML
-        html = markdown.markdown(text, extensions=['fenced_code', 'codehilite'])
-        
-        # Очистка HTML от потенциально опасных тегов
-        allowed_tags = ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'strong', 'em', 
-                       'ul', 'ol', 'li', 'code', 'pre', 'blockquote', 'a']
-        allowed_attrs = {'a': ['href']}
-        html = bleach.clean(html, tags=allowed_tags, attributes=allowed_attrs)
-        
-        return html
-    
+        """Форматирует текст в безопасный HTML с поддержкой Markdown"""
+        try:
+            text = re.sub(r'```(\w+)?\n(.*?)\n```', r'```\1\n\2\n```', text, flags=re.DOTALL)
+            text = re.sub(r'`([^`]+)`', r'`\1`', text)
+            text = re.sub(r'^\s*[-*+]\s', '• ', text, flags=re.MULTILINE)
+            html = markdown.markdown(text, extensions=['fenced_code', 'codehilite'])
+            allowed_tags = ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'strong', 'em',
+                           'ul', 'ol', 'li', 'code', 'pre', 'blockquote', 'a']
+            allowed_attrs = {'a': ['href']}
+            return bleach.clean(html, tags=allowed_tags, attributes=allowed_attrs)
+        except Exception as e:
+            logger.error(f"Ошибка форматирования Markdown: {str(e)}")
+            return text  # Возвращаем исходный текст в случае ошибки
+
     def get_streaming_response(self, message):
+        """Возвращает потоковый ответ от Gemini API"""
         try:
             response = self.chat.send_message(
                 message,
                 stream=True,
-                generation_config={
-                    'temperature': 0.9,
-                    'top_p': 0.8,
-                }
+                generation_config={'temperature': 0.9, 'top_p': 0.8}
             )
-            
             for chunk in response:
-                if chunk.text:
-                    # Форматируем каждый чанк как событие SSE
+                if hasattr(chunk, 'text') and chunk.text:
                     yield f"data: {json.dumps({'content': chunk.text})}\n\n"
-                    
+                else:
+                    logger.warning("Получен пустой или некорректный чанк")
+                    yield f"data: {json.dumps({'error': 'Неверный формат ответа от API'})}\n\n"
         except Exception as e:
-            logger.error(f"Error in Gemini API: {e}")
+            logger.error(f"Ошибка в Gemini API: {str(e)}")
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
 
     def get_response(self, message):
+        """Возвращает полный ответ от Gemini API"""
         try:
             response = self.chat.send_message(
                 message,
                 stream=True,
-                generation_config={
-                    'temperature': 0.9,
-                    'top_p': 0.8,
-                }
+                generation_config={'temperature': 0.9, 'top_p': 0.8}
             )
-            
             full_response = ""
             for chunk in response:
-                if chunk.text:
+                if hasattr(chunk, 'text') and chunk.text:
                     full_response += chunk.text
-            
-            # Форматируем ответ в HTML с поддержкой Markdown
             formatted_response = self.format_markdown(full_response.strip())
             return formatted_response
-            
         except Exception as e:
-            logger.error(f"Error in Gemini API: {e}")
+            logger.error(f"Ошибка в Gemini API: {str(e)}")
             return "Извините, произошла ошибка при обработке запроса."
 
     def reset_chat(self):
-        self.chat = self.model.start_chat(history=[])
+        """Сбрасывает историю чата"""
+        try:
+            self.chat = self.model.start_chat(history=[])
+            logger.debug("История чата сброшена")
+        except Exception as e:
+            logger.error(f"Ошибка сброса чата: {str(e)}")
 
     def change_model(self, model_name):
-        self.model = genai.GenerativeModel(model_name)
-        self.reset_chat() 
+        """Меняет модель Gemini"""
+        try:
+            self.model = genai.GenerativeModel(model_name)
+            self.reset_chat()
+            logger.debug(f"Модель изменена на: {model_name}")
+        except Exception as e:
+            logger.error(f"Ошибка смены модели: {str(e)}")
+            raise
