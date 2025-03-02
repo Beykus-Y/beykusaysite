@@ -14,13 +14,12 @@ from api.gemini_api import GeminiChat, GeminiModel
 
 # Инициализация приложения
 app = Flask(__name__, static_folder='.', static_url_path='')
-
-# Настройка CORS
+# Применяем CORS ко всем маршрутам
 CORS(app, resources={
-    r"/api/*": {
-        "origins": ["http://localhost:8000", "http://127.0.0.1:8000", "*"],  # Разрешённые источники
-        "methods": ["GET", "POST", "OPTIONS"],  # Разрешённые методы
-        "allow_headers": ["Content-Type", "Authorization"]  # Разрешённые заголовки
+    r"/*": {  # Изменено с /api/* на /* для всех маршрутов
+        "origins": ["http://localhost:8000", "http://127.0.0.1:8000", "*"],
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"]
     }
 })
 
@@ -33,16 +32,21 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', os.urandom(24).hex())
 DATABASE = 'database.db'
 chat_instances = {}
 
+# Логирование всех входящих запросов
+@app.before_request
+def log_request_info():
+    logger.info(f"Запрос: {request.method} {request.path} from {request.headers.get('Origin', 'unknown')}")
+
 # Добавляем заголовки CORS ко всем ответам
 @app.after_request
 def add_cors_headers(response):
-    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Origin'] = request.headers.get('Origin', '*')
     response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
     return response
 
-# Обработка OPTIONS запросов вручную
-@app.route('/api/<path:path>', methods=['OPTIONS'])
+# Обработка OPTIONS запросов для всех маршрутов
+@app.route('/<path:path>', methods=['OPTIONS'])
 def handle_options(path):
     return '', 204
 
@@ -366,6 +370,7 @@ def serve_index():
         logger.error(f"Ошибка загрузки index.html: {e}")
         return "Сервер работает, но index.html не найден", 404
     
+    
 @app.route('/auth')
 def auth():
     logger.debug("Запрос к /auth")
@@ -374,6 +379,7 @@ def auth():
     except Exception as e:
         logger.error(f"Ошибка загрузки auth.html: {e}")
         return "Сервер работает, но auth.html не найден", 404
+
 
 # Запуск сервера
 if __name__ == '__main__':
