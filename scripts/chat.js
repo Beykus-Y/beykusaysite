@@ -462,8 +462,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const content = header.nextElementSibling;
         const isHidden = content.style.display === 'none';
         content.style.display = isHidden ? 'block' : 'none';
-        header.querySelector('.thinking-time').parentElement.textContent = 
-            isHidden ? '🤔 Скрыть размышления' : '🤔 Показать размышления';
+        const timeSpan = header.querySelector('.thinking-time');
+        const time = timeSpan ? timeSpan.textContent : '';
+        header.innerHTML = isHidden ? 
+            `🤔 Скрыть размышления <span class="thinking-time">${time}</span>` : 
+            `🤔 Показать размышления <span class="thinking-time">${time}</span>`;
     };
 });
 
@@ -471,10 +474,36 @@ async function handleStreamingResponse(response, botMessageElement) {
     let fullResponse = '';
     let currentThoughts = '';
     let isCollectingThoughts = false;
+    let thoughtsContainer = null;
+    const botMessageContent = botMessageElement.querySelector('.message-content');
     const botMessageText = botMessageElement.querySelector('.message-text');
-    
-    for await (const chunk of response) {
-        try {
+    let thinkingTimer = null;
+    let thinkingSeconds = 0;
+
+    // Функция для создания контейнера размышлений
+    function createThoughtsContainer() {
+        thoughtsContainer = document.createElement('div');
+        thoughtsContainer.className = 'thoughts-container';
+        thoughtsContainer.innerHTML = `
+            <div class="thoughts-header" onclick="toggleThoughts(this)">
+                🤔 Думает... <span class="thinking-time">0s</span>
+            </div>
+            <div class="thoughts-content" style="display: none;"></div>
+        `;
+        botMessageContent.insertBefore(thoughtsContainer, botMessageText);
+        
+        // Запускаем таймер
+        thinkingTimer = setInterval(() => {
+            thinkingSeconds++;
+            const timeSpan = thoughtsContainer.querySelector('.thinking-time');
+            if (timeSpan) {
+                timeSpan.textContent = `${thinkingSeconds}s`;
+            }
+        }, 1000);
+    }
+
+    try {
+        for await (const chunk of response) {
             const data = JSON.parse(chunk.replace('data: ', ''));
             if (data.error) {
                 console.error('Ошибка:', data.error);
@@ -483,44 +512,51 @@ async function handleStreamingResponse(response, botMessageElement) {
             }
 
             const content = data.content;
-            
+
             // Проверяем начало тега think
-            if (content.includes('<think>') && !isCollectingThoughts) {
+            if (content.includes('<think>')) {
                 isCollectingThoughts = true;
-                // Создаем контейнер для размышлений, если его еще нет
-                if (!botMessageElement.querySelector('.thoughts-container')) {
-                    const thoughtsContainer = document.createElement('div');
-                    thoughtsContainer.className = 'thoughts-container';
-                    thoughtsContainer.innerHTML = `
-                        <div class="thoughts-header" onclick="toggleThoughts(this)">
-                            🤔 Думает... <span class="thinking-time">0s</span>
-                        </div>
-                        <div class="thoughts-content" style="display: none;"></div>
-                    `;
-                    botMessageElement.querySelector('.message-content').insertBefore(
-                        thoughtsContainer,
-                        botMessageElement.querySelector('.message-text')
-                    );
+                if (!thoughtsContainer) {
+                    createThoughtsContainer();
                 }
+                continue;
             }
 
-            if (isCollectingThoughts) {
-                if (content.includes('</think>')) {
-                    isCollectingThoughts = false;
-                    const thoughtsContent = botMessageElement.querySelector('.thoughts-content');
+            // Проверяем конец тега think
+            if (content.includes('</think>')) {
+                isCollectingThoughts = false;
+                if (thoughtsContainer) {
+                    const thoughtsContent = thoughtsContainer.querySelector('.thoughts-content');
                     thoughtsContent.innerHTML = marked.parse(currentThoughts);
-                } else {
-                    currentThoughts += content;
+                    thoughtsContainer.querySelector('.thoughts-header').innerHTML = 
+                        `🤔 Показать размышления <span class="thinking-time">${thinkingSeconds}s</span>`;
+                    if (thinkingTimer) {
+                        clearInterval(thinkingTimer);
+                    }
+                }
+                continue;
+            }
+
+            // Собираем контент
+            if (isCollectingThoughts) {
+                currentThoughts += content;
+                if (thoughtsContainer) {
+                    const thoughtsContent = thoughtsContainer.querySelector('.thoughts-content');
+                    thoughtsContent.innerHTML = marked.parse(currentThoughts);
                 }
             } else {
                 fullResponse += content;
+                botMessageText.innerHTML = marked.parse(fullResponse)
+                    .replace(/<pre><code[^>]*>\s*<\/code><\/pre>/g, '');
             }
 
-            botMessageText.innerHTML = marked.parse(fullResponse).replace(/<pre><code[^>]*>\s*<\/code><\/pre>/g, '');
-            
+            // Прокручиваем к последнему сообщению
             botMessageElement.scrollIntoView({ behavior: 'smooth', block: 'end' });
-        } catch (error) {
-            console.error('Ошибка обработки данных:', error);
+        }
+    } catch (error) {
+        console.error('Ошибка обработки данных:', error);
+        if (thinkingTimer) {
+            clearInterval(thinkingTimer);
         }
     }
 }
