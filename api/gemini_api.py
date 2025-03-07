@@ -12,9 +12,9 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 class GeminiModel(Enum):
-    BEYKUS_SMALL = "gemini-2.0-flash-8b"
-    BEYKUS_SMALL_R = "gemini-2.0-flash"
-    BEYKUS_CHAT = "gemini-2.0-pro-exp-02-05"
+    BEYKUS_SMALL = "gemini-2.0-flash"
+    BEYKUS_CHAT = "gemini-1.5-flash-8b"
+    BEYKUS_SMALL_R = "gemini-2.0-pro-exp-02-05"
 
 # Конфигурация API
 GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
