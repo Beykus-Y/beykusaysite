@@ -66,9 +66,9 @@ function addMessage(message) {
                         .trim();
     }
     
-    // Форматируем контент с помощью marked
+    // Форматируем контент с помощью marked, но удаляем пустые pre
     const formattedContent = message.is_bot ? 
-        marked.parse(content) : 
+        marked.parse(content).replace(/<pre><code[^>]*>\s*<\/code><\/pre>/g, '') : 
         `<p>${escapeHtml(content)}</p>`;
     
     messageElement.innerHTML = `
@@ -466,5 +466,63 @@ document.addEventListener('DOMContentLoaded', async () => {
             isHidden ? '🤔 Скрыть размышления' : '🤔 Показать размышления';
     };
 });
+
+async function handleStreamingResponse(response, botMessageElement) {
+    let fullResponse = '';
+    let currentThoughts = '';
+    let isCollectingThoughts = false;
+    const botMessageText = botMessageElement.querySelector('.message-text');
+    
+    for await (const chunk of response) {
+        try {
+            const data = JSON.parse(chunk.replace('data: ', ''));
+            if (data.error) {
+                console.error('Ошибка:', data.error);
+                botMessageText.innerHTML = `<p class="error">Ошибка: ${data.error}</p>`;
+                return;
+            }
+
+            const content = data.content;
+            
+            // Проверяем начало тега think
+            if (content.includes('<think>') && !isCollectingThoughts) {
+                isCollectingThoughts = true;
+                // Создаем контейнер для размышлений, если его еще нет
+                if (!botMessageElement.querySelector('.thoughts-container')) {
+                    const thoughtsContainer = document.createElement('div');
+                    thoughtsContainer.className = 'thoughts-container';
+                    thoughtsContainer.innerHTML = `
+                        <div class="thoughts-header" onclick="toggleThoughts(this)">
+                            🤔 Думает... <span class="thinking-time">0s</span>
+                        </div>
+                        <div class="thoughts-content" style="display: none;"></div>
+                    `;
+                    botMessageElement.querySelector('.message-content').insertBefore(
+                        thoughtsContainer,
+                        botMessageElement.querySelector('.message-text')
+                    );
+                }
+            }
+
+            if (isCollectingThoughts) {
+                if (content.includes('</think>')) {
+                    isCollectingThoughts = false;
+                    const thoughtsContent = botMessageElement.querySelector('.thoughts-content');
+                    thoughtsContent.innerHTML = marked.parse(currentThoughts);
+                } else {
+                    currentThoughts += content;
+                }
+            } else {
+                fullResponse += content;
+            }
+
+            botMessageText.innerHTML = marked.parse(fullResponse).replace(/<pre><code[^>]*>\s*<\/code><\/pre>/g, '');
+            
+            botMessageElement.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        } catch (error) {
+            console.error('Ошибка обработки данных:', error);
+        }
+    }
+}
 
 export { addMessage, escapeHtml };
