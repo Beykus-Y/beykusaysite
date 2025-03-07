@@ -12,11 +12,9 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 class GeminiModel(Enum):
-    FLASH = "gemini-2.0-flash"
-    FLASH_LITE = "gemini-2.0-flash-lite"
-    PRO_EXP = "gemini-2.0-pro-exp-02-05"
-    FLASH_THINKING = "gemini-2.0-flash-thinking-exp-01-21"
-    FLASH_8B = "gemini-1.5-flash-8b"
+    BEYKUS_SMALL = "gemini-2.0-flash-8b"
+    BEYKUS_SMALL_R = "gemini-2.0-flash"
+    BEYKUS_CHAT = "gemini-2.0-pro-exp-02-05"
 
 # Конфигурация API
 GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
@@ -26,14 +24,49 @@ if not GOOGLE_API_KEY:
 genai.configure(api_key=GOOGLE_API_KEY)
 
 class GeminiChat:
-    def __init__(self, model_name=GeminiModel.FLASH_8B.value):
+    def __init__(self, model_name=GeminiModel.BEYKUS_SMALL.value):
         try:
             self.model = genai.GenerativeModel(model_name)
+            self.model_name = model_name
+            self.system_prompt = self._load_system_prompt()
             self.chat = self.model.start_chat(history=[])
+            # Инициализируем чат с системным промптом
+            self.chat.send_message(self.system_prompt)
             logger.debug(f"Инициализирован чат с моделью: {model_name}")
         except Exception as e:
             logger.error(f"Ошибка инициализации модели: {str(e)}")
             raise
+
+    def _load_system_prompt(self):
+        """Загружает и комбинирует системные промпты"""
+        try:
+            # Определяем имя файла модели на основе значения модели
+            model_map = {
+                GeminiModel.BEYKUS_SMALL.value: "BeykusSmall.txt",
+                GeminiModel.BEYKUS_SMALL_R.value: "BeykusSmallR.txt",
+                GeminiModel.BEYKUS_CHAT.value: "BeykusChat.txt"
+            }
+            
+            prompts_dir = os.path.join(os.path.dirname(__file__), 'prompts')
+            
+            # Загружаем общий промпт
+            with open(os.path.join(prompts_dir, 'default.txt'), 'r', encoding='utf-8') as f:
+                default_prompt = f.read().strip()
+            
+            # Загружаем специфичный промпт для модели
+            model_file = model_map.get(self.model_name)
+            if not model_file:
+                logger.warning(f"Файл промпта не найден для модели {self.model_name}")
+                return default_prompt
+                
+            with open(os.path.join(prompts_dir, model_file), 'r', encoding='utf-8') as f:
+                model_prompt = f.read().strip()
+            
+            # Комбинируем промпты
+            return f"{default_prompt}\n\n{model_prompt}"
+        except Exception as e:
+            logger.error(f"Ошибка загрузки системного промпта: {str(e)}")
+            return "You are a helpful AI assistant."
 
     def format_markdown(self, text):
         """Форматирует текст в безопасный HTML с поддержкой Markdown"""
@@ -90,6 +123,8 @@ class GeminiChat:
         """Сбрасывает историю чата"""
         try:
             self.chat = self.model.start_chat(history=[])
+            # Переинициализируем чат с системным промптом
+            self.chat.send_message(self.system_prompt)
             logger.debug("История чата сброшена")
         except Exception as e:
             logger.error(f"Ошибка сброса чата: {str(e)}")
@@ -98,6 +133,8 @@ class GeminiChat:
         """Меняет модель Gemini"""
         try:
             self.model = genai.GenerativeModel(model_name)
+            self.model_name = model_name
+            self.system_prompt = self._load_system_prompt()
             self.reset_chat()
             logger.debug(f"Модель изменена на: {model_name}")
         except Exception as e:
