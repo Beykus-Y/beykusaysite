@@ -29,10 +29,13 @@ class GeminiChat:
             self.model = genai.GenerativeModel(model_name)
             self.model_name = model_name
             self.system_prompt = self._load_system_prompt()
-            self.chat = self.model.start_chat(history=[])
-            # Инициализируем чат с системным промптом
-            self.chat.send_message(self.system_prompt)
-            logger.debug(f"Инициализирован чат с моделью: {model_name}")
+            # Изменяем инициализацию чата, добавляя системный промпт как роль
+            self.chat = self.model.start_chat(history=[
+                {'role': 'user', 'parts': ['System: ' + self.system_prompt]},
+                {'role': 'model', 'parts': ['Understood. I will act according to these instructions.']}
+            ])
+            logger.info(f"Инициализирован чат с моделью: {model_name}")
+            logger.info(f"Загружен системный промпт: {self.system_prompt[:100]}...")  # Логируем для отладки
         except Exception as e:
             logger.error(f"Ошибка инициализации модели: {str(e)}")
             raise
@@ -48,9 +51,22 @@ class GeminiChat:
             }
             
             prompts_dir = os.path.join(os.path.dirname(__file__), 'prompts')
+            logger.debug(f"Путь к директории промптов: {prompts_dir}")  # Добавляем лог
+            
+            # Проверяем существование директории
+            if not os.path.exists(prompts_dir):
+                logger.error(f"Директория промптов не найдена: {prompts_dir}")
+                os.makedirs(prompts_dir)
+                raise FileNotFoundError(f"Директория промптов не найдена: {prompts_dir}")
+            
+            default_prompt_path = os.path.join(prompts_dir, 'default.txt')
+            # Проверяем существование файла default.txt
+            if not os.path.exists(default_prompt_path):
+                logger.error(f"Файл default.txt не найден: {default_prompt_path}")
+                raise FileNotFoundError(f"Файл default.txt не найден: {default_prompt_path}")
             
             # Загружаем общий промпт
-            with open(os.path.join(prompts_dir, 'default.txt'), 'r', encoding='utf-8') as f:
+            with open(default_prompt_path, 'r', encoding='utf-8') as f:
                 default_prompt = f.read().strip()
             
             # Загружаем специфичный промпт для модели
@@ -58,12 +74,19 @@ class GeminiChat:
             if not model_file:
                 logger.warning(f"Файл промпта не найден для модели {self.model_name}")
                 return default_prompt
+            
+            model_prompt_path = os.path.join(prompts_dir, model_file)
+            if not os.path.exists(model_prompt_path):
+                logger.error(f"Файл промпта модели не найден: {model_prompt_path}")
+                return default_prompt
                 
-            with open(os.path.join(prompts_dir, model_file), 'r', encoding='utf-8') as f:
+            with open(model_prompt_path, 'r', encoding='utf-8') as f:
                 model_prompt = f.read().strip()
             
             # Комбинируем промпты
-            return f"{default_prompt}\n\n{model_prompt}"
+            final_prompt = f"{default_prompt}\n\n{model_prompt}"
+            logger.debug(f"Загружен промпт для модели {self.model_name}: {final_prompt[:100]}...")  # Добавляем лог
+            return final_prompt
         except Exception as e:
             logger.error(f"Ошибка загрузки системного промпта: {str(e)}")
             return "You are a helpful AI assistant."
@@ -86,8 +109,10 @@ class GeminiChat:
     def get_streaming_response(self, message):
         """Возвращает потоковый ответ от Gemini API"""
         try:
+            # Добавляем напоминание о системном промпте перед каждым сообщением
+            prompt_reminder = f"Remember your role and instructions: {self.system_prompt[:100]}...\n\nUser message: {message}"
             response = self.chat.send_message(
-                message,
+                prompt_reminder,
                 stream=True,
                 generation_config={'temperature': 0.9, 'top_p': 0.8}
             )
@@ -122,9 +147,11 @@ class GeminiChat:
     def reset_chat(self):
         """Сбрасывает историю чата"""
         try:
-            self.chat = self.model.start_chat(history=[])
-            # Переинициализируем чат с системным промптом
-            self.chat.send_message(self.system_prompt)
+            # Изменяем инициализацию чата при сбросе
+            self.chat = self.model.start_chat(history=[
+                {'role': 'user', 'parts': ['System: ' + self.system_prompt]},
+                {'role': 'model', 'parts': ['Understood. I will act according to these instructions.']}
+            ])
             logger.debug("История чата сброшена")
         except Exception as e:
             logger.error(f"Ошибка сброса чата: {str(e)}")
