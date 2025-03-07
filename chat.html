@@ -42,6 +42,7 @@
                         placeholder="Введите сообщение..." 
                         rows="1"
                         maxlength="2000"
+                        onkeydown="if(event.keyCode == 13 && !event.shiftKey) { event.preventDefault(); this.form.dispatchEvent(new Event('submit')); }"
                     ></textarea>
                     <div class="input-actions">
                         <button type="button" class="attach-btn" title="Прикрепить файл">📎</button>

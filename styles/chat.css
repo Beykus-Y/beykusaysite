@@ -446,3 +446,49 @@ body {
         max-width: 90%;
     }
 }
+
+.thoughts-container {
+    margin-bottom: 10px;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 8px;
+}
+
+.thoughts-header {
+    padding: 8px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-weight: 500;
+    border-radius: 8px;
+}
+
+.thoughts-header:hover {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.thoughts-content {
+    padding: 12px;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.thinking-time {
+    font-size: 0.9em;
+    color: #666;
+}
+
+[data-theme="dark"] .thoughts-container {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="dark"] .thoughts-header:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .thoughts-content {
+    border-top-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .thinking-time {
+    color: #999;
+}

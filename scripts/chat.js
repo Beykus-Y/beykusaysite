@@ -37,18 +37,55 @@ function addMessage(message) {
     
     const time = new Date(message.created_at).toLocaleTimeString();
     
+    // Извлекаем размышления из контента, если они есть
+    let thoughts = '';
+    let content = message.content;
+    
+    if (message.is_bot) {
+        const thoughtsMatch = content.match(/```<think>\n([\s\S]*?)\n<\/think>```/);
+        if (thoughtsMatch) {
+            thoughts = thoughtsMatch[1];
+            content = content.replace(/```<think>\n[\s\S]*?\n<\/think>```/, '');
+        }
+    }
+    
     const formattedContent = message.is_bot ? 
-        marked.parse(message.content) : 
-        `<p>${escapeHtml(message.content)}</p>`;
+        marked.parse(content) : 
+        `<p>${escapeHtml(content)}</p>`;
     
     messageElement.innerHTML = `
         ${message.is_bot ? '<div class="message-avatar">🤖</div>' : ''}
         <div class="message-content">
+            ${thoughts ? `
+                <div class="thoughts-container">
+                    <div class="thoughts-header" onclick="toggleThoughts(this)">
+                        🤔 Думает... <span class="thinking-time">0s</span>
+                    </div>
+                    <div class="thoughts-content" style="display: none;">
+                        ${marked.parse(thoughts)}
+                    </div>
+                </div>
+            ` : ''}
             <div class="message-text">${formattedContent}</div>
             <div class="message-time">${time}</div>
         </div>
         ${!message.is_bot ? '<div class="message-avatar">👤</div>' : ''}
     `;
+    
+    // Обновляем время размышлений
+    if (thoughts) {
+        const thinkingTimeElement = messageElement.querySelector('.thinking-time');
+        let seconds = 0;
+        const timer = setInterval(() => {
+            seconds++;
+            thinkingTimeElement.textContent = `${seconds}s`;
+        }, 1000);
+        
+        // Останавливаем таймер, когда получен полный ответ
+        if (message.content.includes('</think>')) {
+            clearInterval(timer);
+        }
+    }
     
     messageElement.querySelectorAll('a').forEach(link => {
         link.target = '_blank';
@@ -393,6 +430,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             resetChat(currentChatId);
         }
     });
+
+    // Добавляем функцию для переключения видимости размышлений
+    window.toggleThoughts = function(header) {
+        const content = header.nextElementSibling;
+        content.style.display = content.style.display === 'none' ? 'block' : 'none';
+    };
 });
 
 export { addMessage, escapeHtml };
