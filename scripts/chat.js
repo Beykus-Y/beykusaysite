@@ -42,10 +42,10 @@ function addMessage(message) {
     let content = message.content;
     
     if (message.is_bot) {
-        const thoughtsMatch = content.match(/```<think>\n([\s\S]*?)\n<\/think>```/);
+        const thoughtsMatch = content.match(/```<think>([\s\S]*?)<\/think>```/);
         if (thoughtsMatch) {
-            thoughts = thoughtsMatch[1];
-            content = content.replace(/```<think>\n[\s\S]*?\n<\/think>```/, '');
+            thoughts = thoughtsMatch[1].trim();
+            content = content.replace(/```<think>[\s\S]*?<\/think>```/, '').trim();
         }
     }
     
@@ -81,10 +81,10 @@ function addMessage(message) {
             thinkingTimeElement.textContent = `${seconds}s`;
         }, 1000);
         
-        // Останавливаем таймер, когда получен полный ответ
-        if (message.content.includes('</think>')) {
+        // Останавливаем таймер через 2 секунды после добавления сообщения
+        setTimeout(() => {
             clearInterval(timer);
-        }
+        }, 2000);
     }
     
     messageElement.querySelectorAll('a').forEach(link => {
@@ -431,10 +431,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Добавляем функцию для переключения видимости размышлений
+    // Добавляем глобальную функцию toggleThoughts
     window.toggleThoughts = function(header) {
         const content = header.nextElementSibling;
-        content.style.display = content.style.display === 'none' ? 'block' : 'none';
+        const isHidden = content.style.display === 'none';
+        content.style.display = isHidden ? 'block' : 'none';
+        header.querySelector('.thinking-time').parentElement.textContent = 
+            isHidden ? '🤔 Скрыть размышления' : '🤔 Показать размышления';
     };
 });
 

@@ -448,9 +448,10 @@ body {
 }
 
 .thoughts-container {
-    margin-bottom: 10px;
-    background: rgba(0, 0, 0, 0.05);
+    margin: 8px 0;
+    background: var(--secondary-bg);
     border-radius: 8px;
+    border: 1px solid var(--border-color);
 }
 
 .thoughts-header {
@@ -458,37 +459,40 @@ body {
     cursor: pointer;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    gap: 8px;
     font-weight: 500;
-    border-radius: 8px;
+    border-radius: 8px 8px 0 0;
+    transition: background-color 0.2s;
 }
 
 .thoughts-header:hover {
-    background: rgba(0, 0, 0, 0.1);
+    background: var(--hover-bg);
 }
 
 .thoughts-content {
     padding: 12px;
-    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    border-top: 1px solid var(--border-color);
+    font-size: 0.95em;
+    line-height: 1.5;
 }
 
 .thinking-time {
+    margin-left: auto;
     font-size: 0.9em;
-    color: #666;
+    color: var(--secondary-text);
 }
 
-[data-theme="dark"] .thoughts-container {
-    background: rgba(255, 255, 255, 0.05);
+/* Добавляем CSS переменные для тем */
+[data-theme="light"] {
+    --secondary-bg: rgba(0, 0, 0, 0.03);
+    --border-color: rgba(0, 0, 0, 0.1);
+    --hover-bg: rgba(0, 0, 0, 0.05);
+    --secondary-text: #666;
 }
 
-[data-theme="dark"] .thoughts-header:hover {
-    background: rgba(255, 255, 255, 0.1);
-}
-
-[data-theme="dark"] .thoughts-content {
-    border-top-color: rgba(255, 255, 255, 0.1);
-}
-
-[data-theme="dark"] .thinking-time {
-    color: #999;
+[data-theme="dark"] {
+    --secondary-bg: rgba(255, 255, 255, 0.05);
+    --border-color: rgba(255, 255, 255, 0.1);
+    --hover-bg: rgba(255, 255, 255, 0.08);
+    --secondary-text: #999;
 }
