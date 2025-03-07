@@ -49,8 +49,9 @@ function addMessage(message) {
         }
     }
     
+    // Форматируем контент с помощью marked, но предварительно обрабатываем теги think
     const formattedContent = message.is_bot ? 
-        marked.parse(content) : 
+        marked.parse(content.replace(/<\/?think>/g, '')) : 
         `<p>${escapeHtml(content)}</p>`;
     
     messageElement.innerHTML = `
@@ -59,7 +60,7 @@ function addMessage(message) {
             ${thoughts ? `
                 <div class="thoughts-container">
                     <div class="thoughts-header" onclick="toggleThoughts(this)">
-                        🤔 Думает... <span class="thinking-time">0s</span>
+                        🤔 Показать размышления <span class="thinking-time">0s</span>
                     </div>
                     <div class="thoughts-content" style="display: none;">
                         ${marked.parse(thoughts)}
@@ -238,6 +239,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     console.log('Form elements:', { messageForm, messageInput });
 
+    // Обработчик Enter для Firefox
+    messageInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            messageForm.dispatchEvent(new Event('submit'));
+        }
+    });
+
     messageForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         if (!currentChatId) {
@@ -318,13 +327,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         } catch (error) {
             console.error('Ошибка отправки сообщения:', error);
-        }
-    });
-
-    messageInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            messageForm.dispatchEvent(new Event('submit'));
         }
     });
 
