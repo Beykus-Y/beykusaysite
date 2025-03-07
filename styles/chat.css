@@ -35,6 +35,9 @@
 /* Базовые стили */
 body {
     margin: 0;
+    padding: 0;
+    height: 100vh;
+    overflow: hidden;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     background: var(--bg-primary);
     color: var(--text-primary);
@@ -48,14 +51,15 @@ body {
     height: 100vh;
     max-width: 1920px;
     margin: 0 auto;
+    overflow: hidden;
 }
 
 /* Боковая панель */
 .chat-sidebar {
-    background: var(--bg-secondary);
-    border-right: 1px solid var(--border-color);
+    height: 100vh;
     display: flex;
     flex-direction: column;
+    border-right: 1px solid var(--border-color);
 }
 
 .sidebar-header {
@@ -86,7 +90,6 @@ body {
 .chats-list {
     flex: 1;
     overflow-y: auto;
-    padding: var(--spacing-unit);
 }
 
 .chat-item {
@@ -128,6 +131,7 @@ body {
 
 /* Основная область чата */
 .chat-main {
+    height: 100vh;
     display: flex;
     flex-direction: column;
     max-width: 1200px;
@@ -136,12 +140,9 @@ body {
 }
 
 .chat-header {
-    padding: var(--spacing-unit);
+    padding: 16px;
     border-bottom: 1px solid var(--border-color);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: var(--bg-primary);
+    flex-shrink: 0;
 }
 
 .user-profile {
@@ -241,8 +242,9 @@ body {
     max-width: 900px;
     margin: 0 auto;
     width: 100%;
-    background: var(--bg-primary);
     border-top: 1px solid var(--border-color);
+    background: var(--bg-color);
+    flex-shrink: 0;
 }
 
 .input-container form {

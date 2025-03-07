@@ -42,16 +42,33 @@ function addMessage(message) {
     let content = message.content;
     
     if (message.is_bot) {
-        const thoughtsMatch = content.match(/```<think>([\s\S]*?)<\/think>```/);
-        if (thoughtsMatch) {
-            thoughts = thoughtsMatch[1].trim();
-            content = content.replace(/```<think>[\s\S]*?<\/think>```/, '').trim();
+        // Пробуем различные варианты форматирования тега think
+        const thinkPatterns = [
+            /```<think>([\s\S]*?)<\/think>```/,
+            /<think>([\s\S]*?)<\/think>/,
+            /```think\n([\s\S]*?)```/,
+            /\[think\]([\s\S]*?)\[\/think\]/
+        ];
+
+        for (const pattern of thinkPatterns) {
+            const match = content.match(pattern);
+            if (match) {
+                thoughts = match[1].trim();
+                content = content.replace(match[0], '').trim();
+                break;
+            }
         }
+
+        // Удаляем оставшиеся теги think, если они есть
+        content = content.replace(/<\/?think>/g, '')
+                        .replace(/```think\n?/g, '')
+                        .replace(/\[\/think\]/g, '')
+                        .trim();
     }
     
-    // Форматируем контент с помощью marked, но предварительно обрабатываем теги think
+    // Форматируем контент с помощью marked
     const formattedContent = message.is_bot ? 
-        marked.parse(content.replace(/<\/?think>/g, '')) : 
+        marked.parse(content) : 
         `<p>${escapeHtml(content)}</p>`;
     
     messageElement.innerHTML = `
@@ -72,6 +89,13 @@ function addMessage(message) {
         </div>
         ${!message.is_bot ? '<div class="message-avatar">👤</div>' : ''}
     `;
+
+    // Добавляем логирование для отладки
+    if (message.is_bot) {
+        console.log('Original content:', message.content);
+        console.log('Extracted thoughts:', thoughts);
+        console.log('Cleaned content:', content);
+    }
     
     // Обновляем время размышлений
     if (thoughts) {
