@@ -388,15 +388,15 @@ body {
     margin: 0.5em 0;
 }
 
-.message-text h1, 
-.message-text h2, 
-.message-text h3, 
+.message-text h1,
+.message-text h2,
+.message-text h3,
 .message-text h4 {
     margin: 1em 0 0.5em;
     font-weight: 600;
 }
 
-.message-text ul, 
+.message-text ul,
 .message-text ol {
     margin: 0.5em 0;
     padding-left: 1.5em;
@@ -455,7 +455,7 @@ body {
     .chat-container {
         grid-template-columns: 1fr;
     }
-    
+
     .chat-sidebar {
         position: fixed;
         left: -280px;
@@ -465,19 +465,19 @@ body {
         z-index: 1000;
         transition: left 0.3s ease;
     }
-    
+
     .chat-sidebar.active {
         left: 0;
     }
-    
+
     .message {
         max-width: 90%;
     }
-    
+
     .header-actions {
         gap: 8px;
     }
-    
+
     .theme-toggle, .reset-chat-btn {
         width: 32px;
         height: 32px;
