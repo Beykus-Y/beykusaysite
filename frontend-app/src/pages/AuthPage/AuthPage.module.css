@@ -1,0 +1,295 @@
+/* src/pages/AuthPage/AuthPage.module.css */
+
+.authPage {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* Плавный градиент фона */
+    background: linear-gradient(135deg, var(--primary-color-light), var(--bg-secondary));
+    /* Или используйте градиент из HomePage, если нужен яркий фон */
+    /* background: linear-gradient(145deg, hsl(var(--primary-hue), 70%, 65%), hsl(var(--primary-hue), 50%, 55%)); */
+    padding: 1rem;
+    /* Для темной темы фон будет изменен через переменные */
+}
+
+.authContainer {
+    width: 100%;
+    max-width: 450px; /* Немного уже */
+}
+
+.authBox {
+    background: var(--bg-color);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+.authHeader {
+    padding: 1.5rem 2rem;
+    text-align: center;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.logo {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: var(--primary-color);
+}
+
+.authTabs {
+    display: flex;
+    gap: 0.5rem; /* Уменьшен gap */
+    justify-content: center;
+    background-color: var(--bg-secondary); /* Фон для табов */
+    padding: 0.5rem;
+    border-radius: var(--border-radius-md);
+    margin: 0 auto 1rem; /* Отцентровано и добавлен отступ снизу */
+    max-width: max-content;
+}
+
+.tabBtn {
+    padding: 0.6rem 1.2rem;
+    border: none;
+    background: none;
+    color: var(--text-light);
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 500;
+    position: relative;
+    transition: color 0.3s, background-color 0.3s;
+    border-radius: var(--border-radius-sm);
+}
+
+/* Убираем псевдоэлемент ::after */
+
+.tabBtn.active {
+    color: var(--primary-color-text);
+    background-color: var(--primary-color);
+    box-shadow: var(--shadow-sm);
+}
+.tabBtn:not(.active):hover {
+    color: var(--text-color);
+}
+
+
+.authForm {
+    padding: 2rem;
+    display: none;
+}
+
+.authForm.active {
+    display: block;
+    animation: fadeIn 0.4s ease-out;
+}
+
+.formGroup {
+    margin-bottom: 1.25rem; /* Скорректирован отступ */
+}
+
+.formGroup label:not(input[type="checkbox"] + label) { /* Стили для обычных label */
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.formGroup input[type="text"],
+.formGroup input[type="email"],
+.formGroup input[type="password"] {
+    width: 100%;
+    padding: 0.75rem 1rem; /* Скорректирован padding */
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-md);
+    font-size: 1rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    background-color: var(--bg-color); /* Убедимся что фон правильный */
+}
+.formGroup input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px hsla(var(--primary-hue), var(--primary-saturation), var(--primary-lightness), 0.2);
+}
+
+
+.passwordInput {
+    position: relative;
+}
+
+.togglePassword {
+    position: absolute;
+    right: 0.8rem; /* Скорректировано */
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    opacity: 0.5; /* Меньше по умолчанию */
+    transition: opacity 0.2s;
+    padding: 0.2rem; /* Небольшой padding для кликабельности */
+    color: var(--text-light);
+    font-size: 1.1rem;
+}
+
+.togglePassword:hover {
+    opacity: 0.8;
+}
+
+.rememberMe {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.5rem; /* Добавлен отступ сверху */
+    font-size: var(--font-size-sm);
+}
+.rememberMe label, .terms label { /* Стили для label с чекбоксом */
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-light);
+    cursor: pointer;
+}
+.rememberMe input[type="checkbox"], .terms input[type="checkbox"] {
+    width: 1em;
+    height: 1em;
+    accent-color: var(--primary-color); /* Цвет активного чекбокса */
+}
+
+.forgotPassword {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-size: var(--font-size-sm);
+}
+.forgotPassword:hover {
+    text-decoration: underline;
+}
+
+.authSubmit {
+    width: 100%;
+    padding: 0.9rem; /* Скорректирован padding */
+    background: var(--primary-color);
+    color: var(--primary-color-text);
+    border: none;
+    border-radius: var(--border-radius-md);
+    font-size: 1rem;
+    font-weight: 600; /* Сделаем текст жирнее */
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+    margin-top: 0.5rem; /* Добавлен отступ */
+}
+
+.authSubmit:hover {
+    background: var(--primary-color-dark);
+    box-shadow: var(--shadow-sm);
+}
+.authSubmit:active {
+    transform: scale(0.99);
+}
+.authSubmit:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+
+.socialAuth {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    text-align: center;
+    border-top: 1px solid var(--border-color);
+}
+
+.socialAuth p {
+    color: var(--text-light);
+    margin-bottom: 1rem;
+    position: relative;
+    font-size: var(--font-size-sm);
+}
+
+/* Линии по бокам "Или войдите через" */
+.socialAuth p::before,
+.socialAuth p::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: calc(50% - 50px); /* Рассчитываем ширину */
+    max-width: 100px; /* Ограничиваем */
+    height: 1px;
+    background: var(--border-color);
+}
+.socialAuth p::before { left: 0; }
+.socialAuth p::after { right: 0; }
+
+
+.socialButtons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.socialBtn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem; /* Скорректирован gap */
+    padding: 0.7rem; /* Скорректирован padding */
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-md);
+    background: var(--bg-color);
+    color: var(--text-color); /* Добавлен цвет текста */
+    font-weight: 500; /* Добавлена жирность */
+    cursor: pointer;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.socialBtn:hover {
+    background: var(--bg-secondary);
+    box-shadow: var(--shadow-sm);
+}
+
+.socialBtn img {
+    width: 18px; /* Уменьшены иконки */
+    height: 18px;
+}
+
+.terms {
+    font-size: var(--font-size-sm);
+    margin-top: 0.5rem;
+}
+
+.terms a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+.terms a:hover {
+    text-decoration: underline;
+}
+
+.errorMessage {
+    color: var(--error);
+    background-color: hsla(var(--error-hue, 0), 80%, 60%, 0.1); /* Переменная для оттенка ошибки */
+    border: 1px solid hsla(var(--error-hue, 0), 80%, 60%, 0.5);
+    padding: 0.8rem 1rem;
+    border-radius: var(--border-radius-md);
+    margin: -1rem 2rem 1.5rem; /* Размещаем между табами и формой */
+    text-align: center;
+    font-size: var(--font-size-sm);
+    animation: fadeIn 0.3s ease-out;
+}
+/* Добавим переменную для оттенка ошибки (если ее нет) */
+:root { --error-hue: 0; } /* Красный */
+
+
+/* Адаптивность */
+@media (max-width: 480px) {
+    .authContainer { max-width: 100%; }
+    .authBox { border-radius: 0; border: none; box-shadow: none; }
+    .authForm { padding: 1.5rem; }
+    .socialButtons { flex-direction: column; }
+    .authPage { padding: 0; } /* Убираем padding для полного прилегания */
+    .authHeader { padding-bottom: 1rem; }
+    .errorMessage { margin-left: 1.5rem; margin-right: 1.5rem; }
+}

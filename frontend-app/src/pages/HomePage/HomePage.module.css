@@ -1,0 +1,519 @@
+/* src/pages/HomePage/HomePage.module.css */
+
+.header { /* Особые стили для хедера */
+    background: linear-gradient(145deg, hsl(var(--primary-hue), 70%, 65%), hsl(var(--primary-hue), 50%, 55%));
+    color: var(--primary-color-text);
+    padding: 0; /* Убираем padding, так как контент центрируется иначе */
+    min-height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.header > .nav, .header > .hero { /* Применяем padding к внутренним элементам хедера */
+    width: 100%;
+    max-width: 1300px; /* Ограничение ширины контента */
+    padding-left: 3rem; /* Возвращаем горизонтальные отступы */
+    padding-right: 3rem;
+}
+.header > .nav {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+}
+ .header > .hero {
+     padding-top: 3rem;
+     padding-bottom: 3rem;
+ }
+
+
+
+/* Эффект свечения (опционально) */
+.header::before {
+    content: '';
+    position: absolute;
+    top: -20%;
+    left: -20%;
+    width: 140%;
+    height: 140%;
+    background: radial-gradient(circle, hsla(var(--primary-hue), 100%, 95%, 0.1) 0%, transparent 60%);
+    animation: rotateBackground 40s linear infinite;
+    z-index: 0;
+}
+@keyframes rotateBackground {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+
+.nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 0;
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    max-width: 1300px; /* Ограничение ширины */
+}
+
+.logo {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--primary-color-text);
+    text-decoration: none;
+}
+
+.navLinks {
+    display: flex;
+    gap: 2rem;
+    list-style: none;
+    background: hsla(0, 0%, 100%, 0.1); /* Легкий glassmorphism */
+    padding: 0.75rem 1.5rem;
+    border-radius: 50px;
+    backdrop-filter: blur(8px);
+    border: 1px solid hsla(0, 0%, 100%, 0.2);
+    margin: 0;
+}
+
+.navLinks a {
+    color: var(--primary-color-text);
+    text-decoration: none;
+    font-weight: 500;
+    transition: opacity 0.3s ease;
+}
+
+.navLinks a:hover {
+    opacity: 0.8;
+    text-decoration: none; /* Убираем подчеркивание здесь */
+}
+
+.hero {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    max-width: 900px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 2;
+    padding: 3rem 0;
+    animation: fadeIn 1s ease-out; /* Анимация для hero */
+}
+
+.hero h1 {
+    font-size: clamp(2.5rem, 6vw, 4rem); /* Адаптивный размер шрифта */
+    font-weight: 800;
+    margin-bottom: 1.5rem;
+    line-height: 1.2;
+    color: var(--primary-color-text);
+    text-shadow: 0 2px 10px hsla(var(--primary-hue), 50%, 20%, 0.3);
+}
+
+.hero p {
+    font-size: clamp(1.1rem, 3vw, 1.5rem);
+    margin-bottom: 2.5rem;
+    color: hsla(0, 0%, 100%, 0.9);
+    max-width: 700px;
+}
+
+.ctaButton {
+    background: var(--primary-color-text);
+    color: var(--primary-color); /* Цвет фона хедера */
+    padding: 1rem 2.5rem;
+    border: none;
+    border-radius: 50px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    box-shadow: var(--shadow-md);
+    text-decoration: none;
+    display: inline-block;
+}
+
+.ctaButton:hover {
+    transform: translateY(-3px) scale(1.03);
+    box-shadow: var(--shadow-lg);
+}
+
+
+/* --- Секции --- */
+.features, .about, .pricing, .contact, .header { /* Добавил .header сюда */
+    padding: clamp(3rem, 8vw, 6rem) 1.5rem;
+    background-color: var(--bg-color);
+    position: relative;
+    /* --- ДОБАВЛЕНО: Гарантируем ширину --- */
+    width: 100%;
+    max-width: 100%;
+}
+/* Чередование фона секций (опционально) */
+.features, .pricing {
+     background-color: var(--bg-secondary);
+}
+
+
+.sectionTitle { /* Общий стиль для заголовков секций */
+    text-align: center;
+    font-size: clamp(1.8rem, 5vw, 2.5rem);
+    margin-bottom: 3rem;
+    font-weight: 700;
+    color: var(--text-color);
+}
+
+/* Используем .sectionTitle в JSX вместо h2 */
+/* Например: <h2 className={styles.sectionTitle}>Возможности</h2> */
+
+.featuresGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+    max-width: 1300px;
+    margin: 0 auto;
+}
+
+.featureCard {
+    background: var(--bg-color);
+    padding: 2rem 1.5rem;
+    border-radius: var(--border-radius-lg);
+    text-align: center;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    color: var(--text-color);
+}
+
+.featureCard:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-lg);
+}
+
+.featureIcon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    display: inline-block;
+    color: var(--primary-color);
+}
+.featureCard h3 {
+     font-size: 1.25rem;
+     margin-bottom: 0.5rem;
+     color: var(--text-color);
+}
+.featureCard p {
+     font-size: 0.95rem;
+     color: var(--text-light);
+     line-height: 1.6;
+}
+
+
+.aboutContent {
+    max-width: 800px;
+    margin: 0 auto;
+    text-align: center;
+    background: var(--bg-secondary); /* Или --bg-color */
+    padding: 3rem;
+    border-radius: var(--border-radius-lg);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+}
+.aboutContent p {
+    font-size: 1.05rem;
+    color: var(--text-color);
+    line-height: 1.7;
+}
+
+
+.pricingCards {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 2rem;
+    max-width: 1300px;
+    margin: 0 auto;
+}
+
+.priceCard {
+    background: var(--bg-color);
+    padding: 2rem;
+    border-radius: var(--border-radius-lg);
+    text-align: center;
+    box-shadow: var(--shadow-md);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    color: var(--text-color);
+    flex: 1;
+    min-width: 300px;
+    max-width: 380px;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border-color);
+}
+.priceCard:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-lg);
+}
+
+.priceCard.featured {
+    background: linear-gradient(145deg, hsl(var(--primary-hue), 70%, 65%), hsl(var(--primary-hue), 50%, 55%));
+    color: var(--primary-color-text);
+    transform: scale(1.05);
+    position: relative;
+    z-index: 1;
+    border: none;
+}
+.priceCard.featured h3,
+.priceCard.featured .price,
+.priceCard.featured li {
+     color: var(--primary-color-text);
+}
+.priceCard.featured .price {
+    color: var(--primary-color-text); /* Цена тоже белая */
+}
+.priceCard.featured .secondaryButton { /* Кнопка внутри featured */
+    background: var(--primary-color-text);
+    color: var(--primary-color);
+    border-color: transparent;
+}
+.priceCard.featured .secondaryButton:hover {
+     background: hsla(0, 0%, 100%, 0.9);
+}
+
+
+.priceCard h3 {
+    font-size: 1.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.price {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 1rem 0 1.5rem;
+    color: var(--primary-color);
+}
+
+.priceCard ul {
+    list-style: none;
+    margin: 1.5rem 0;
+    padding: 0;
+    flex-grow: 1;
+}
+
+.priceCard li {
+    margin: 0.5rem 0;
+    color: var(--text-light);
+    font-size: 0.95rem;
+}
+
+
+.primaryButton,
+.secondaryButton {
+    padding: 0.8rem 1.5rem;
+    border: 1px solid transparent;
+    border-radius: 50px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: auto;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.primaryButton {
+    background: var(--primary-color);
+    color: var(--primary-color-text);
+}
+.primaryButton:hover {
+     background: var(--primary-color-dark);
+     box-shadow: var(--shadow-sm);
+}
+
+.secondaryButton {
+    background: transparent;
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+.secondaryButton:hover {
+     background: var(--primary-color-light); /* Легкий фон при наведении */
+     box-shadow: var(--shadow-sm);
+}
+
+
+.contactForm {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    max-width: 600px;
+    margin: 0 auto;
+    background: var(--bg-secondary); /* Или --bg-color */
+    padding: clamp(1.5rem, 5vw, 3rem);
+    border-radius: var(--border-radius-lg);
+    border: 1px solid var(--border-color);
+}
+
+.contactForm input,
+.contactForm textarea {
+    padding: 0.8rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-md);
+    background: var(--bg-color);
+    font-size: 1rem;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    color: var(--text-color);
+}
+.contactForm textarea {
+    min-height: 120px;
+    resize: vertical;
+}
+
+.contactForm input:focus,
+.contactForm textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px hsla(var(--primary-hue), var(--primary-saturation), var(--primary-lightness), 0.2);
+}
+
+.submitButton {
+    /* Используем стиль .primaryButton */
+    padding: 0.8rem 1.5rem;
+    border: 1px solid transparent;
+    border-radius: 50px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-block;
+    background: var(--primary-color);
+    color: var(--primary-color-text);
+    font-size: 1.1rem;
+}
+
+.submitButton:hover {
+    background: var(--primary-color-dark);
+    box-shadow: var(--shadow-sm);
+    transform: translateY(-2px);
+}
+
+/* --- Футер --- */
+.footer {
+    background: var(--secondary-color);
+    color: hsla(0, 0%, 100%, 0.8);
+    padding: 2.5rem 1.5rem;
+    margin-top: auto;
+    /* --- ДОБАВЛЕНО: Гарантируем ширину --- */
+    width: 100%;
+    max-width: 100%;
+}
+
+.footerContent {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    max-width: 1300px;
+    margin: 0 auto;
+}
+.footerLogo {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: white;
+}
+
+
+.footerLinks {
+    display: flex;
+    gap: 1.5rem;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.footerLinks a {
+    color: hsla(0, 0%, 100%, 0.7);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.footerLinks a:hover {
+    color: white;
+    text-decoration: underline;
+}
+
+.socialLinks {
+    display: flex;
+    gap: 1rem;
+}
+
+.socialLinks a {
+    color: hsla(0, 0%, 100%, 0.7);
+    font-size: 1.3rem; /* Немного уменьшены иконки */
+    transition: color 0.3s ease, transform 0.3s ease;
+}
+
+.socialLinks a:hover {
+    transform: translateY(-3px);
+    color: white;
+}
+
+/* --- Адаптивность для HomePage --- */
+.mobileMenuButton {
+     display: none;
+     background: none;
+     border: none;
+     color: white;
+     font-size: 2rem;
+     cursor: pointer;
+     padding: 0.5rem;
+     z-index: 1001; /* Выше чем .header::before */
+ }
+
+@media (max-width: 768px) {
+    .header > .nav, .header > .hero {
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+    }
+    .nav { padding: 0.5rem 0; flex-wrap: wrap; }
+
+     .mobileMenuButton { display: block; }
+
+     .navLinks {
+         /* Стили для мобильного меню */
+         flex-direction: column;
+         width: 90%;
+         position: absolute;
+         top: 75px; /* Отступ от верха */
+         left: 5%;
+         right: 5%;
+         background: hsla(var(--primary-hue), 50%, 30%, 0.8); /* Полупрозрачный темный фон */
+         backdrop-filter: blur(10px);
+         padding: 1.5rem;
+         border-radius: var(--border-radius-lg);
+         box-shadow: var(--shadow-lg);
+         gap: 1rem;
+         /* Скрыто по умолчанию */
+         transform: translateY(-10px);
+         opacity: 0;
+         visibility: hidden;
+         transition: transform 0.3s ease, opacity 0.3s ease, visibility 0.3s ease;
+     }
+     /* Класс для показа меню */
+     .navLinks.active {
+         transform: translateY(0);
+         opacity: 1;
+         visibility: visible;
+     }
+     .navLinks a {
+         padding: 0.5rem 0;
+         text-align: center;
+         width: 100%;
+     }
+
+
+    .features, .about, .pricing, .contact { padding: 3rem 1rem; }
+    .sectionTitle { margin-bottom: 2rem; }
+    .pricingCards { flex-direction: column; align-items: stretch; }
+    .priceCard { max-width: none; /* Растягиваем на всю доступную ширину */ }
+    .priceCard.featured { transform: scale(1); } /* Убираем увеличение */
+    .footerContent { flex-direction: column; gap: 2rem; text-align: center; }
+}

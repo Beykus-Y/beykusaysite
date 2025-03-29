@@ -1,0 +1,710 @@
+/* src/pages/ChatPage/ChatPage.module.css */
+
+.chatContainer {
+    display: grid;
+    grid-template-columns: clamp(240px, 22vw, 300px) 1fr;
+    /* --- УБИРАЕМ height: 100% --- */
+    /* height: 100%; */
+    /* --- ДОБАВЛЯЕМ flex: 1 --- */
+    flex: 1; /* Говорит элементу занять все доступное пространство в flex-родителе (#root) */
+    /* --- ДОБАВЛЯЕМ min-height: 0 (важно для flex/grid детей) --- */
+    min-height: 0; /* Предотвращает разрастание из-за контента, позволяет сжиматься */
+    /* --- ОСТАЛЬНОЕ ОСТАВЛЯЕМ --- */
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+    overflow: hidden;
+    background-color: var(--bg-color);
+}
+
+
+/* Боковая панель */
+.chatSidebar {
+    height: 100%; /* Строго 100% высоты */
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border-color);
+    background: var(--bg-secondary); /* Слегка другой фон */
+    transition: transform 0.3s ease, box-shadow 0.3s ease; /* Для мобильной анимации */
+}
+
+.sidebarHeader {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+    display: flex; /* Для выравнивания кнопки */
+}
+
+.newChatBtn {
+    /* Используем стиль .primaryButton */
+    padding: 0.6rem 1.2rem;
+    border: 1px solid transparent;
+    border-radius: var(--border-radius-md); /* Менее круглый */
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: flex; /* Для иконки + текста (если нужно) */
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background: var(--primary-color);
+    color: var(--primary-color-text);
+    width: 100%; /* Растянем кнопку */
+    font-size: var(--font-size-sm);
+}
+.newChatBtn:hover {
+    background: var(--primary-color-dark);
+    box-shadow: var(--shadow-sm);
+}
+.newChatBtn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+
+.chatsList {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0.75rem; /* Уменьшен padding */
+}
+.chatsList p { /* Текст "Загрузка чатов", "Нет чатов" */
+    text-align: center;
+    color: var(--text-light);
+    padding: 1rem;
+    font-size: var(--font-size-sm);
+}
+
+
+.chatItem {
+    padding: 0.75rem 1rem;
+    border-radius: var(--border-radius-md);
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    border: 1px solid transparent; /* Для рамки при ховере/активности */
+}
+
+.chatItem:hover {
+    background: var(--bg-tertiary);
+    transform: translateX(3px);
+    /* box-shadow: var(--shadow-sm); */ /* Можно убрать тень для чистоты */
+}
+
+.chatItem.active {
+    background: var(--primary-color-light);
+    border-color: var(--primary-color); /* Рамка для активного */
+    color: var(--primary-color-dark); /* Цвет текста активного */
+}
+.chatItem.active .chatTitle {
+    color: var(--primary-color-dark);
+    font-weight: 600;
+}
+.chatItem.active .chatPreview {
+    color: hsl(var(--primary-hue), 30%, 55%);
+}
+
+
+.chatTitle {
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+    color: var(--text-color);
+    font-size: 0.95rem; /* Немного уменьшено */
+    word-break: break-all;
+    line-height: 1.3;
+}
+
+.chatPreview {
+    font-size: var(--font-size-sm);
+    color: var(--text-light);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.4;
+    word-break: break-all;
+}
+
+/* Основная область чата */
+.chatMain {
+    height: 100%; /* Строго 100% высоты */
+    min-height: 0;
+    display: grid;
+    grid-template-rows: auto 1fr auto; /* Шапка, сообщения, ввод */
+    width: 100%;
+    background-color: var(--bg-color);
+    overflow: hidden; /* Предотвращаем двойной скролл */
+}
+
+.chatHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1.5rem; /* Скорректирован padding */
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-color);
+    z-index: 10; /* Выше сайдбара */
+    flex-shrink: 0;
+    gap: 1rem; /* Пространство между элементами */
+}
+
+.headerActions {
+    display: flex;
+    gap: 0.5rem; /* Уменьшен gap */
+    align-items: center;
+}
+
+.themeToggle, .resetChatBtn {
+    padding: 6px; /* Уменьшен padding */
+    border: none;
+    background: none;
+    cursor: pointer;
+    border-radius: 50%;
+    width: 32px; /* Фикс размер */
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s, color 0.2s;
+    color: var(--text-light); /* Слегка серый */
+    font-size: 1.1rem; /* Размер иконки */
+}
+
+.themeToggle:hover, .resetChatBtn:hover {
+    background-color: var(--bg-tertiary);
+    color: var(--text-color);
+}
+.resetChatBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.userProfile {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-grow: 1; /* Занимает доступное пространство */
+    min-width: 0; /* Для правильного сжатия */
+}
+.userProfile span { /* Имя пользователя */
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+
+/* Стили для сообщений */
+.messagesContainer {
+    overflow-y: auto; /* Главный скролл здесь */
+    padding: 1.5rem; /* Увеличен padding */
+    max-width: 100%;
+    min-height: 0; 
+}
+.messagesContainer > *:last-child {
+    margin-bottom: 0.5rem; /* Небольшой отступ снизу от последнего сообщения */
+}
+/* Сообщения об ошибке/загрузке */
+.messagesContainer > p {
+    text-align: center;
+    color: var(--text-light);
+    padding: 2rem 1rem;
+}
+
+
+.message {
+    display: flex;
+    gap: 0.75rem; /* Уменьшен gap */
+    margin-bottom: 1.5rem; /* Скорректирован отступ */
+    max-width: 85%; /* Макс ширина сообщения */
+    align-items: flex-end; /* Выравнивание по низу */
+}
+
+.message.user {
+    margin-left: auto;
+    flex-direction: row-reverse;
+}
+
+.message.ai {
+    margin-right: auto;
+}
+
+.messageContent {
+    flex: 1;
+    min-width: 0;
+    padding: 0.75rem 1rem; /* Скорректирован padding */
+    border-radius: var(--border-radius-lg); /* Более скругленные */
+    position: relative;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    line-height: 1.5;
+}
+
+.message.user .messageContent {
+    background: var(--primary-color);
+    color: var(--primary-color-text);
+    border-bottom-right-radius: var(--border-radius-sm); /* "Хвостик" */
+}
+.message.ai .messageContent {
+    background: var(--bg-secondary);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    border-bottom-left-radius: var(--border-radius-sm); /* "Хвостик" */
+}
+
+
+.messageAvatar {
+    width: 32px; /* Немного меньше */
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-tertiary);
+    color: var(--text-light);
+    flex-shrink: 0;
+    font-size: 1rem;
+    /* align-self: flex-end; Убрано, т.к. align-items: flex-end у .message */
+    /* margin-bottom: 5px; */ /* Убрано */
+    border: 1px solid var(--border-color);
+}
+.message.user .messageAvatar {
+    background-color: hsl(var(--primary-hue), 20%, 85%); /* Немного другой фон для пользователя */
+}
+
+.messageTime {
+    font-size: 0.75rem; /* Очень маленький */
+    color: var(--text-light);
+    margin-top: 0.3rem;
+    display: block; /* Время всегда на новой строке */
+    width: 100%;
+    opacity: 0.8;
+}
+
+.message.user .messageTime {
+    text-align: right;
+    color: hsla(0, 0%, 100%, 0.7); /* Менее яркий */
+}
+.message.ai .messageTime {
+     text-align: left;
+     color: var(--text-light);
+ }
+
+
+/* Форма ввода */
+.inputContainer {
+    padding: 1rem 1.5rem; /* Скорректирован padding */
+    border-top: 1px solid var(--border-color);
+    background: var(--bg-color);
+    z-index: 1;
+    flex-shrink: 0;
+}
+
+.inputContainer form {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.75rem; /* Скорректирован gap */
+    background-color: var(--bg-secondary); /* Фон для поля ввода */
+    border-radius: var(--border-radius-lg); /* Скругляем всю область */
+    border: 1px solid var(--border-color);
+    padding: 0.5rem; /* Внутренний padding */
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.inputContainer form:focus-within { /* Подсветка при фокусе внутри */
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px hsla(var(--primary-hue), var(--primary-saturation), var(--primary-lightness), 0.2);
+}
+
+
+.inputContainer textarea {
+    flex: 1;
+    min-width: 0;
+    border: none; /* Убираем рамку у textarea */
+    resize: none;
+    max-height: 150px; /* Уменьшена макс высота */
+    overflow-y: auto;
+    background: transparent; /* Прозрачный фон */
+    color: var(--text-color);
+    font-size: 1rem;
+    line-height: 1.5;
+    padding: 0.5rem; /* Внутренний padding для текста */
+}
+.inputContainer textarea:focus {
+    outline: none; /* Убираем стандартный outline */
+    box-shadow: none; /* Убираем тень */
+}
+.inputContainer textarea::placeholder {
+    color: var(--text-light);
+    opacity: 0.8;
+}
+
+.inputActions {
+    display: flex;
+    gap: 0.5rem; /* Уменьшен gap */
+}
+
+.attachBtn, .sendBtn {
+    background: transparent;
+    color: var(--text-light);
+    border: none;
+    width: 36px; /* Уменьшен размер */
+    height: 36px;
+    padding: 0;
+    border-radius: 50%;
+    transition: background-color 0.2s, color 0.2s, transform 0.1s;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem; /* Размер иконки */
+    flex-shrink: 0;
+}
+.attachBtn:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-color);
+}
+.attachBtn:disabled {
+     opacity: 0.5;
+     cursor: not-allowed;
+}
+
+.sendBtn {
+    background: var(--primary-color);
+    color: var(--primary-color-text);
+}
+.sendBtn:hover {
+    background: var(--primary-color-dark);
+}
+.sendBtn:disabled {
+    background: hsl(var(--primary-hue), 20%, 80%); /* Серый для неактивной кнопки */
+    color: var(--text-light);
+    cursor: not-allowed;
+}
+.sendBtn:active:not(:disabled) {
+    transform: scale(0.95);
+}
+
+
+/* Стили для кода и Markdown в сообщениях */
+.messageText {
+    /* Базовые стили уже есть у .messageContent */
+}
+
+.messageText p:first-child { margin-top: 0; }
+.messageText p:last-child { margin-bottom: 0; }
+
+
+.messageText pre {
+    max-width: 100%;
+    background: var(--bg-tertiary); /* Фон кода чуть темнее */
+    border: 1px solid var(--border-color);
+    padding: 0.8em 1em; /* Скорректирован padding */
+    border-radius: var(--border-radius-md);
+    margin: 0.75em 0;
+    font-size: 0.85em; /* Мельче шрифт кода */
+    line-height: 1.45;
+}
+[data-theme="dark"] .messageText pre {
+    background: hsl(var(--primary-hue), 10%, 10%); /* Очень темный фон для кода в темной теме */
+    border-color: hsl(var(--primary-hue), 10%, 25%);
+}
+
+
+/* Инлайн-код */
+.messageText :not(pre) > code {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    padding: 0.15em 0.4em;
+    border-radius: var(--border-radius-sm);
+    font-size: 0.85em;
+}
+[data-theme="dark"] .messageText :not(pre) > code {
+     background: hsl(var(--primary-hue), 10%, 25%);
+     border-color: hsl(var(--primary-hue), 10%, 35%);
+}
+
+/* Заголовки в Markdown */
+.messageText h1, .messageText h2, .messageText h3, .messageText h4 {
+    margin: 1.2em 0 0.6em;
+    font-weight: 600;
+    line-height: 1.3;
+    border-bottom: 1px solid var(--border-color); /* Линия под заголовком */
+    padding-bottom: 0.3em;
+}
+.messageText h1 { font-size: 1.4em; }
+.messageText h2 { font-size: 1.25em; }
+.messageText h3 { font-size: 1.1em; }
+.messageText h4 { font-size: 1em; font-weight: 500; border-bottom: none;}
+
+
+.messageText ul,
+.messageText ol {
+    margin: 0.75em 0;
+    padding-left: 1.5em; /* Чуть меньше отступ */
+}
+
+.messageText li {
+    margin: 0.3em 0;
+}
+.messageText li::marker { /* Цвет маркеров списка */
+    color: var(--text-light);
+}
+
+
+.messageText blockquote {
+    border-left: 3px solid var(--primary-color);
+    margin: 1em 0;
+    padding-left: 1em;
+    color: var(--text-light);
+    font-style: italic;
+}
+
+.messageText a {
+    /* Стили наследуются из глобальных */
+    font-weight: 500; /* Ссылки чуть жирнее */
+}
+
+
+/* Таблицы */
+.messageText table {
+    border-collapse: collapse;
+    margin: 1.2em 0;
+    width: 100%; /* Растягиваем */
+    max-width: 100%;
+    overflow-x: auto;
+    display: table; /* Меняем display */
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-md); /* Скругляем углы таблицы */
+    font-size: 0.9em;
+}
+.messageText th,
+.messageText td {
+    border: none; /* Убираем внутренние границы */
+    border-bottom: 1px solid var(--border-color); /* Горизонтальные линии */
+    padding: 0.6em 0.8em;
+    text-align: left;
+}
+.messageText tr:last-child td {
+    border-bottom: none; /* Убираем границу у последней строки */
+}
+.messageText th {
+    background-color: var(--bg-secondary);
+    font-weight: 600;
+}
+.messageText tr:nth-child(even) { /* Чередование строк */
+     background-color: var(--bg-secondary);
+}
+[data-theme="dark"] .messageText tr:nth-child(even) {
+    background-color: hsl(var(--primary-hue), 10%, 18%);
+}
+
+
+.messageText hr {
+    border: none;
+    border-top: 1px dashed var(--border-color); /* Пунктирная линия */
+    margin: 1.5em 0;
+}
+
+
+/* Селектор моделей */
+.modelSelect {
+    padding: 0.4rem 0.8rem; /* Компактнее */
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-md);
+    background: var(--bg-secondary); /* Фон селекта */
+    font-size: var(--font-size-sm);
+    color: var(--text-color);
+    box-shadow: var(--shadow-sm);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+    max-width: 180px; /* Ограничим ширину */
+    height: 36px; /* Фикс высота как у кнопок */
+    appearance: none; /* Убираем стандартный вид */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E"); /* Своя стрелка */
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+    background-size: 1.2em 1.2em;
+    padding-right: 2rem; /* Место для стрелки */
+}
+.modelSelect:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px hsla(var(--primary-hue), var(--primary-saturation), var(--primary-lightness), 0.2);
+}
+.modelSelect:disabled {
+     opacity: 0.6;
+     cursor: not-allowed;
+     background-color: var(--bg-tertiary);
+ }
+
+
+/* Подсветка синтаксиса (предполагаем, что CSS highlight.js подключен) */
+.messageText .hljs {
+    padding: 1em;
+    border-radius: var(--border-radius-md);
+    margin: 0.75em 0;
+    font-family: var(--font-family-mono);
+    font-size: 0.85em;
+    line-height: 1.5;
+    border: 1px solid var(--border-color);
+}
+
+
+/* Блок размышлений */
+.thoughtsContainer {
+    margin: 0.5rem 0 0.25rem;
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius-md);
+    border: 1px solid var(--border-color);
+    max-width: 100%;
+    overflow: hidden; /* Чтобы скругление работало */
+    transition: background-color 0.2s ease;
+}
+.message.user .thoughtsContainer { /* Размышления в сообщении пользователя (если возможно) */
+    background-color: hsla(0, 0%, 100%, 0.1);
+    border-color: hsla(0, 0%, 100%, 0.2);
+}
+.message.user .thoughtsContainer .thoughtsHeader {
+    color: hsla(0, 0%, 100%, 0.8);
+}
+.message.user .thoughtsContainer .thoughtsContent {
+    border-color: hsla(0, 0%, 100%, 0.2);
+    color: hsla(0, 0%, 100%, 0.8);
+}
+
+
+.thoughtsHeader {
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+    transition: background-color 0.2s;
+    font-size: 0.8rem; /* Мельче шрифт заголовка */
+    color: var(--text-light);
+}
+.thoughtsHeader:hover {
+    background: var(--bg-tertiary);
+}
+[data-theme="dark"] .thoughtsHeader:hover {
+     background-color: hsl(var(--primary-hue), 10%, 25%);
+}
+
+.thoughtsContent {
+    padding: 0.75rem 1rem;
+    border-top: 1px solid var(--border-color);
+    font-size: 0.85rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    max-height: 250px;
+    overflow-y: auto;
+    color: var(--text-color); /* Явный цвет текста */
+}
+/* Стили кода внутри размышлений */
+.thoughtsContent pre {
+    background: var(--bg-color); /* Фон кода светлее фона блока */
+    font-size: 0.9em;
+    margin: 0.5em 0;
+    padding: 0.6em 0.8em;
+}
+.thoughtsContent :not(pre) > code {
+    background: var(--bg-color);
+    font-size: 0.9em;
+    padding: 0.1em 0.3em;
+}
+[data-theme="dark"] .thoughtsContent pre,
+[data-theme="dark"] .thoughtsContent :not(pre) > code {
+     background: hsl(var(--primary-hue), 10%, 15%); /* Фон кода темнее */
+     border-color: hsl(var(--primary-hue), 10%, 30%);
+ }
+
+
+.thinkingTime {
+    margin-left: auto;
+    font-size: 0.9em;
+    color: var(--text-light);
+    opacity: 0.8;
+}
+
+/* Адаптивный дизайн Чата */
+.toggleSidebarBtn {
+    display: none; /* Скрыта по умолчанию */
+    /* Стили копируем из .themeToggle, .resetChatBtn */
+    padding: 6px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s, color 0.2s;
+    color: var(--text-light);
+    font-size: 1.4rem; /* Иконка меню */
+    margin-right: 0.5rem; /* Отступ справа */
+    z-index: 1001; /* Выше сайдбара */
+    order: -1; /* Ставим в начало хедера */
+}
+.toggleSidebarBtn:hover {
+     background-color: var(--bg-tertiary);
+     color: var(--text-color);
+}
+
+
+@media (max-width: 768px) {
+    .chatContainer {
+        grid-template-columns: 1fr; /* Одна колонка */
+    }
+
+    .chatSidebar {
+        position: fixed;
+        left: 0; /* Начинаем с 0 */
+        top: 0;
+        bottom: 0;
+        width: 85%; /* Ширина сайдбара */
+        max-width: 300px; /* Но не больше */
+        z-index: 1000;
+        transform: translateX(-100%); /* Скрываем сдвигом */
+        box-shadow: var(--shadow-lg); /* Тень для наложения */
+        border-right: none;
+    }
+
+    .chatSidebar.active {
+        transform: translateX(0); /* Показываем */
+    }
+
+    .message { max-width: 95%; } /* Сообщения почти на всю ширину */
+
+    /* Показываем кнопку бургер-меню */
+    .toggleSidebarBtn { display: flex; }
+
+    /* Оверлей для затемнения остальной части экрана при открытом меню */
+    .sidebarOverlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 999; /* Ниже сайдбара, но выше остального */
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+     .sidebarOverlay.active {
+         opacity: 1;
+         visibility: visible;
+     }
+
+     .inputContainer { padding: 0.75rem 1rem; }
+     .inputContainer form { padding: 0.4rem; }
+     .inputContainer textarea { padding: 0.4rem; }
+     .attachBtn, .sendBtn { width: 32px; height: 32px; font-size: 1.1rem;}
+     .messagesContainer { padding: 1rem; }
+     .chatHeader { padding: 0.75rem 1rem; }
+}
