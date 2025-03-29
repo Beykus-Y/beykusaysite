@@ -1,57 +1,27 @@
+// src/pages/ChatPage/ChatPage.tsx
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './ChatPage.module.css';
-// Импортируем библиотеки, если установлены как зависимости
 import { marked } from 'marked';
 import hljs from 'highlight.js';
-// Импортируйте CSS для highlight.js глобально в main.tsx или index.css
+// Убедитесь, что CSS импортирован глобально (например, в index.css или main.tsx)
 // import 'highlight.js/styles/tokyo-night-dark.css';
 
-// Типизация данных (упрощенная)
-interface User {
-    id: string | number;
-    name: string;
-    email: string;
-}
-
-interface Chat {
-    id: string;
-    title: string;
-    last_message?: string; // Сделаем необязательным на всякий случай
-}
-
-interface Model {
-    id: string;
-    name: string;
-}
-
+// --- Типизация --- (без изменений)
+interface User { id: string | number; name: string; email: string; }
+interface Chat { id: string; title: string; last_message?: string; }
+interface Model { id: string; name: string; }
 interface Message {
-    id?: string; // Может быть временным ID для UI
-    content: string;
-    is_bot: boolean;
-    created_at: string;
-    thoughts?: string | null;
-    // Дополнительные поля с сервера?
-    chat_id?: string;
-    user_id?: string | number;
+    id: string; tempId?: string; content: string; is_bot: boolean;
+    created_at: string; thoughts?: string | null; isStreaming?: boolean;
+    thinkingSeconds?: number; chat_id?: string; user_id?: string | number;
 }
 
-// Конфигурация Marked (можно вынести в отдельный файл)
-marked.setOptions({
-    breaks: true,
-    gfm: true,
-    highlight: function (code, lang) {
-        const language = hljs.getLanguage(lang) ? lang : 'plaintext';
-        try {
-             return hljs.highlight(code, { language, ignoreIllegals: true }).value;
-        } catch (__) {
-             return hljs.highlightAuto(code).value;
-        }
-    }
-});
+// --- Конфигурация Marked --- (без изменений)
+marked.setOptions({ breaks: true, gfm: true });
 
-
-// Вспомогательная функция (можно вынести)
+// --- Вспомогательная функция --- (без изменений)
 function escapeHtml(text: string | undefined | null): string {
     if (typeof text !== 'string') return '';
     const div = document.createElement('div');
@@ -59,9 +29,11 @@ function escapeHtml(text: string | undefined | null): string {
     return div.innerHTML;
 }
 
-
+// === Основной Компонент ===
 function ChatPage() {
     const navigate = useNavigate();
+
+    // --- Состояния --- (без изменений)
     const [user, setUser] = useState<User | null>(null);
     const [chats, setChats] = useState<Chat[]>([]);
     const [models, setModels] = useState<Model[]>([]);
@@ -74,490 +46,504 @@ function ChatPage() {
     const [isLoadingModels, setIsLoadingModels] = useState(false);
     const [isSendingMessage, setIsSendingMessage] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-        return (localStorage.getItem('theme') as 'light' | 'dark') || 'light';
-    });
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Для мобильного меню
+    const [theme, setTheme] = useState<'light' | 'dark'>(() => (localStorage.getItem('theme') as 'light' | 'dark') || 'light');
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [thoughtsVisibility, setThoughtsVisibility] = useState<{ [id: string]: boolean }>({});
 
-    // Refs
-    const messagesEndRef = useRef<HTMLDivElement>(null); // Для автоскролла
-    const textareaRef = useRef<HTMLTextAreaElement>(null); // Для авторесайза
+    // --- Refs --- (без изменений)
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const messagesContainerRef = useRef<HTMLDivElement>(null);
+    const thinkingTimersRef = useRef<{ [id: string]: number }>({});
 
+    // --- Получаем URL и токен --- (без изменений)
     const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
     const token = localStorage.getItem('token');
 
-    // --- Эффекты для загрузки данных ---
+    // --- Функция fetch (базовая) ---
+    // Объявляем до useCallback, чтобы они могли её использовать
+    const baseFetch = useCallback(async (endpoint: string, options: RequestInit = {}) => {
+        const url = `${API_BASE_URL}${endpoint}`;
+        console.log(`Запрос: ${options.method || 'GET'} ${url}`); // Упрощенный лог
 
-    // Загрузка пользователя и проверка токена
-    useEffect(() => {
         if (!token) {
+            console.error("Нет токена");
             navigate('/auth');
-            return;
+            throw new Error("Нет токена");
         }
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-            setUser(JSON.parse(storedUser));
-        } else {
-            // Если пользователя нет, но есть токен, возможно, надо его запросить или выйти
-            localStorage.removeItem('token');
+
+        const response = await fetch(url, {
+            ...options,
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                ...options.headers,
+            },
+        });
+
+        console.log(`Ответ: ${url} Статус ${response.status}`);
+
+        if (response.status === 401) {
+            console.error("Ошибка 401");
+            localStorage.clear();
             navigate('/auth');
+            throw new Error("Unauthorized");
         }
-    }, [token, navigate]);
 
-    // Применение темы
-    useEffect(() => {
-        document.documentElement.setAttribute('data-theme', theme);
-        localStorage.setItem('theme', theme);
-    }, [theme]);
+        if (!response.ok) {
+            let errorData = { error: `Ошибка ${response.status}` };
+            try { errorData = await response.json(); } catch (e) {}
+            const detail = (errorData as any)?.detail || (errorData as any)?.error || JSON.stringify(errorData);
+            console.error("Ошибка запроса:", detail);
+            throw new Error(`Ошибка: ${detail}`);
+        }
 
-    // Загрузка моделей
+        if (response.status === 204 || options.method === 'HEAD') return null;
+        return await response.json();
+
+    }, [token, navigate, API_BASE_URL]); // Зависит от стабильных значений
+
+    // --- Функции Загрузки Данных (Используют baseFetch) ---
     const fetchModels = useCallback(async () => {
-        if (!token) return;
+        // Проверка isLoading остается внутри, перед запросом
+        if (isLoadingModels) { console.log("fetchModels: уже загружается"); return; }
         setIsLoadingModels(true);
+        setError(null); // Сбрасываем ошибку перед запросом
         try {
-            const response = await fetch(`${API_BASE_URL}/api/models`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (!response.ok) throw new Error('Не удалось загрузить модели');
-            const data = await response.json();
-            if (data.models?.length > 0) {
+            const data = await baseFetch(`/api/models`, {}, 'Не удалось загрузить модели');
+            if (data?.models?.length > 0) {
                 setModels(data.models);
-                // Устанавливаем первую модель по умолчанию, если еще не выбрана
-                if (!currentModel) {
-                    setCurrentModel(data.models[0].id);
-                }
+                // Устанавливаем модель по умолчанию ТОЛЬКО ЕСЛИ она еще не установлена
+                setCurrentModel(prev => prev ?? data.models[0].id);
             } else {
                 setModels([]);
             }
         } catch (err: any) {
-            setError(`Ошибка загрузки моделей: ${err.message}`);
+            setError(err.message); // Устанавливаем ошибку
         } finally {
             setIsLoadingModels(false);
         }
-    }, [token, API_BASE_URL, currentModel]); // currentModel добавлен, чтобы не сбрасывать выбор
+        // УБИРАЕМ isLoadingModels ИЗ ЗАВИСИМОСТЕЙ!
+        // Зависим только от baseFetch и currentModel (для установки по умолчанию)
+    }, [baseFetch, currentModel]);
 
-    // Загрузка списка чатов
     const fetchChats = useCallback(async () => {
-        if (!token) return;
+        if (isLoadingChats) { console.log("fetchChats: уже загружается"); return; }
         setIsLoadingChats(true);
         setError(null);
         try {
-            const response = await fetch(`${API_BASE_URL}/api/chats`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-             if (response.status === 401) {
-                 localStorage.removeItem('token'); localStorage.removeItem('user'); navigate('/auth'); return;
-             }
-            if (!response.ok) throw new Error(`Ошибка ${response.status}`);
-            const data: Chat[] = await response.json();
-            setChats(data);
-            // Если текущий чат не установлен или больше не существует, выбираем первый
-             if (data.length > 0 && (!currentChatId || !data.some(chat => chat.id === currentChatId))) {
-                 // Не меняем currentChatId здесь, чтобы не вызывать лишнюю загрузку сообщений
-                 // Установка будет при клике или в useEffect ниже
-             } else if (data.length === 0) {
-                 setCurrentChatId(null); // Если чатов нет, сбрасываем выбор
-                 setMessages([]); // Очищаем сообщения
-             }
+            const data: Chat[] = await baseFetch(`/api/chats`, {}, 'Не удалось загрузить чаты');
+            setChats(data || []);
+            // Если чатов нет, сбрасываем текущий ID
+            if (!data || data.length === 0) {
+                setCurrentChatId(null);
+                setMessages([]); // Очищаем сообщения, если чатов нет
+            }
+            // НЕ ВЫБИРАЕМ ЧАТ АВТОМАТИЧЕСКИ ЗДЕСЬ
+            // Выбор должен происходить либо из URL (если будет), либо кликом пользователя,
+            // либо если currentChatId оказывается невалидным после загрузки.
         } catch (err: any) {
-            setError(`Ошибка загрузки чатов: ${err.message}`);
-             setChats([]); // Очищаем чаты при ошибке
+            setError(err.message);
         } finally {
             setIsLoadingChats(false);
         }
-    }, [token, API_BASE_URL, navigate, currentChatId]); // Добавлен currentChatId
+        // УБИРАЕМ isLoadingChats ИЗ ЗАВИСИМОСТЕЙ!
+        // Зависим только от baseFetch
+    }, [baseFetch]);
 
-    // Загрузка сообщений для выбранного чата
     const fetchMessages = useCallback(async (chatId: string) => {
-        if (!token || !chatId) return;
+        // Проверка chatId и isLoading остается
+        if (!chatId || isLoadingMessages) {
+             console.log(`fetchMessages: пропуск (chatId: ${chatId}, isLoading: ${isLoadingMessages})`);
+             return;
+        }
         setIsLoadingMessages(true);
-        setError(null);
-        setMessages([]); // Очищаем перед загрузкой
+        setError(null); // Сбрасываем ошибку перед запросом сообщений
+        setMessages([]); // Очищаем старые сообщения
         try {
-            const response = await fetch(`${API_BASE_URL}/api/chats/${chatId}/messages`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (response.status === 401) { localStorage.removeItem('token'); localStorage.removeItem('user'); navigate('/auth'); return; }
-            if (!response.ok) throw new Error(`Ошибка ${response.status}`);
-            const data: Message[] = await response.json();
-            setMessages(data);
+            const data: Message[] = await baseFetch(`/api/chats/${chatId}/messages`, {}, 'Не удалось загрузить сообщения');
+            const messagesWithTime = (data || []).map(msg => ({
+                ...msg,
+                id: String(msg.id), // Гарантируем строку
+                thinkingSeconds: msg.thoughts ? 0 : undefined
+            }));
+            setMessages(messagesWithTime);
         } catch (err: any) {
-            setError(`Ошибка загрузки сообщений: ${err.message}`);
+            setError(err.message); // Устанавливаем ошибку, если не удалось загрузить
         } finally {
             setIsLoadingMessages(false);
         }
-    }, [token, API_BASE_URL, navigate]);
+        // УБИРАЕМ isLoadingMessages ИЗ ЗАВИСИМОСТЕЙ!
+        // Зависим только от baseFetch
+    }, [baseFetch]);
 
-     // Эффект для первоначальной загрузки чатов и моделей
-     useEffect(() => {
-         fetchModels();
-         fetchChats();
-     }, [fetchModels, fetchChats]); // Зависимости - сами функции
+    // --- Эффекты ---
+    useEffect(() => { /* Пользователь и токен */
+        if (!token) { navigate('/auth'); return; }
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) { try { setUser(JSON.parse(storedUser)); } catch { localStorage.clear(); navigate('/auth'); } }
+        else { localStorage.clear(); navigate('/auth'); }
+    }, [token, navigate]);
 
-    // Эффект для загрузки сообщений при смене currentChatId
-     useEffect(() => {
-         if (currentChatId) {
-             fetchMessages(currentChatId);
-         } else {
-             setMessages([]); // Очистить сообщения, если чат не выбран
-         }
-     }, [currentChatId, fetchMessages]); // Зависимости - ID чата и функция
+    useEffect(() => { /* Применение темы */
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('theme', theme);
+    }, [theme]);
 
-    // Эффект для автоскролла вниз при появлении новых сообщений
+    // Эффект для первичной загрузки моделей и чатов
     useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [messages]); // Срабатывает при изменении массива сообщений
+        console.log("Первичный useEffect [fetchModels, fetchChats]");
+        fetchModels(); // Загружаем модели
+        fetchChats(); // Загружаем чаты
+    // Зависимости ТОЛЬКО от функций useCallback
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [fetchModels, fetchChats]);
 
-    // Эффект для авторесайза textarea
+    // Эффект для загрузки сообщений ТОЛЬКО при изменении ID чата
     useEffect(() => {
+        console.log(`useEffect [currentChatId]: ${currentChatId}`);
+        if (currentChatId) {
+            fetchMessages(currentChatId); // Загружаем сообщения для нового чата
+            setThoughtsVisibility({}); // Сбрасываем видимость размышлений
+        } else {
+            setMessages([]); // Очищаем сообщения, если чат не выбран (например, после удаления всех чатов)
+        }
+    // Зависим ТОЛЬКО от currentChatId. fetchMessages стабильна благодаря useCallback.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentChatId]);
+
+    useEffect(() => { /* Автоскролл */
+        const timer = setTimeout(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }); }, 100);
+        return () => clearTimeout(timer);
+    }, [messages]);
+
+    useEffect(() => { /* Авторесайз textarea */
         const ta = textareaRef.current;
         if (ta) {
-            ta.style.height = 'auto'; // Сброс высоты
-            const scrollHeight = ta.scrollHeight;
-            const maxHeight = 200; // Из вашего CSS
-            ta.style.height = `${Math.min(scrollHeight, maxHeight)}px`;
+            ta.style.height = 'auto';
+            const maxHeight = 150; // Из CSS
+            ta.style.height = `${Math.min(ta.scrollHeight, maxHeight)}px`;
         }
-    }, [newMessageContent]); // Срабатывает при изменении текста
+    }, [newMessageContent]);
+
+    useEffect(() => { /* Подсветка синтаксиса */
+        if (messagesContainerRef.current) {
+            const container = messagesContainerRef.current;
+            container.querySelectorAll<HTMLElement>('pre code:not(.hljs-highlighted)')
+                .forEach((block) => {
+                    try { hljs.highlightElement(block); block.classList.add('hljs-highlighted'); }
+                    catch (e) { console.error("Ошибка подсветки:", e, block); }
+                });
+            container.querySelectorAll('a:not([target])')
+                 .forEach(link => { link.setAttribute('target', '_blank'); link.setAttribute('rel', 'noopener noreferrer'); });
+        }
+    }, [messages, thoughtsVisibility]);
+
+    useEffect(() => { /* Таймер размышлений */
+        const currentTimers = thinkingTimersRef.current;
+        messages.forEach(msg => {
+            if (msg.isStreaming && msg.tempId && !(msg.tempId in currentTimers)) {
+                const intervalId = window.setInterval(() => {
+                    setMessages(prev => prev.map(m => m.tempId === msg.tempId ? { ...m, thinkingSeconds: (m.thinkingSeconds ?? 0) + 1 } : m ));
+                }, 1000);
+                currentTimers[msg.tempId] = intervalId;
+            }
+        });
+        Object.keys(currentTimers).forEach(tempId => {
+            if (!messages.some(m => m.tempId === tempId && m.isStreaming)) {
+                clearInterval(currentTimers[tempId]);
+                delete currentTimers[tempId];
+            }
+        });
+        return () => { Object.values(currentTimers).forEach(clearInterval); thinkingTimersRef.current = {}; };
+    }, [messages]);
 
     // --- Обработчики событий ---
-
-    const handleThemeToggle = () => {
-        setTheme(prev => prev === 'light' ? 'dark' : 'light');
-    };
-
+    const handleThemeToggle = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
     const handleSelectChat = (chatId: string) => {
-        if (chatId !== currentChatId) {
-             setCurrentChatId(chatId);
-             setIsSidebarOpen(false); // Закрыть сайдбар на мобильных при выборе чата
-        }
+         console.log("Выбор чата:", chatId);
+         if (chatId !== currentChatId) {
+             setCurrentChatId(chatId); // Это вызовет useEffect для загрузки сообщений
+         }
+         setIsSidebarOpen(false);
     };
+    const handleLogout = () => { localStorage.clear(); navigate('/auth'); };
+    const handleToggleThoughts = (messageId: string) => setThoughtsVisibility(prev => ({ ...prev, [messageId]: !prev[messageId] }));
 
-    const handleNewChat = async () => {
-        if (!token) return;
-        // TODO: Добавить состояние загрузки для кнопки
+    const handleNewChat = useCallback(async () => {
+        // Проверка isLoading здесь, а не в зависимостях
+        if (isLoadingChats || isSendingMessage) return;
+        setIsLoadingChats(true); // Ставим флаг только на время выполнения этой функции
         try {
-            const response = await fetch(`${API_BASE_URL}/api/chats`, {
+            const newChat: Chat = await baseFetch(`/api/chats`, {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title: 'Новый чат' }) // Можно запросить имя у пользователя
-            });
-            if (!response.ok) throw new Error('Не удалось создать чат');
-            const newChat: Chat = await response.json();
-            await fetchChats(); // Обновляем список чатов
-            setCurrentChatId(newChat.id); // Сразу переключаемся на новый чат
-            setIsSidebarOpen(false); // Закрыть сайдбар
-        } catch (err: any) {
-            setError(`Ошибка создания чата: ${err.message}`);
-        }
-    };
+                body: JSON.stringify({ title: 'Новый чат' })
+            }, 'Не удалось создать чат');
+            if (newChat) {
+                 await fetchChats(); // Перезагружаем список чатов
+                 setCurrentChatId(newChat.id); // Устанавливаем ID нового чата, useEffect загрузит сообщения
+                 setIsSidebarOpen(false);
+                 setError(null);
+            }
+        } catch (err: any) { setError(err.message); }
+        finally { setIsLoadingChats(false); } // Снимаем флаг
+        // Зависим только от baseFetch и fetchChats (стабильных)
+    }, [baseFetch, fetchChats, isLoadingChats, isSendingMessage]);
 
-    const handleModelChange = async (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const handleModelChange = useCallback(async (event: React.ChangeEvent<HTMLSelectElement>) => {
         const newModelId = event.target.value;
-         if (!token || !currentChatId || newModelId === currentModel) return;
+        if (!currentChatId || newModelId === currentModel) return;
+        const previousModel = currentModel;
+        setCurrentModel(newModelId);
+        try {
+            await baseFetch(`/api/chats/${currentChatId}/model`, {
+                method: 'POST',
+                body: JSON.stringify({ model: newModelId })
+            }, 'Не удалось сменить модель');
+            const modelName = models.find(m => m.id === newModelId)?.name || 'новую';
+            const systemMessage: Message = {
+                 id: `system-${Date.now()}`, content: `Модель изменена на ${modelName}.`,
+                 is_bot: true, created_at: new Date().toISOString(), chat_id: currentChatId,
+             };
+            setMessages(prev => [...prev, systemMessage]);
+            setError(null);
+        } catch (err: any) {
+             setError(err.message);
+             setCurrentModel(previousModel); // Откат
+        }
+        // Зависим от baseFetch, currentChatId, currentModel, models (для имени)
+    }, [baseFetch, currentChatId, currentModel, models]);
 
-         const previousModel = currentModel; // Сохраняем предыдущую модель для отката
-         setCurrentModel(newModelId); // Оптимистичное обновление UI
-
+     const handleResetChat = useCallback(async () => {
+         if (!currentChatId || !window.confirm('Сбросить контекст этого чата для ИИ?')) return;
          try {
-             const response = await fetch(`${API_BASE_URL}/api/chats/${currentChatId}/model`, {
-                 method: 'POST',
-                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                 body: JSON.stringify({ model: newModelId })
-             });
-             if (!response.ok) {
-                 const errorData = await response.json().catch(()=>({}));
-                 throw new Error(errorData.error || `Ошибка ${response.status}`);
-             }
-              // Можно добавить системное сообщение об успешной смене модели
-              // addSystemMessage(`Модель изменена на ${models.find(m => m.id === newModelId)?.name || 'новую'}.`);
-         } catch (error: any) {
-             setError(`Не удалось сменить модель: ${error.message}`);
-             setCurrentModel(previousModel); // Откат UI в случае ошибки
-         }
-    };
+             await baseFetch(`/api/chats/${currentChatId}/reset`, { method: 'POST' }, 'Ошибка сброса чата');
+             const systemMessage: Message = {
+                 id: `system-${Date.now()}`, content: 'Контекст чата для ИИ сброшен.',
+                 is_bot: true, created_at: new Date().toISOString(), chat_id: currentChatId,
+             };
+             setMessages(prev => [...prev, systemMessage]);
+             setError(null);
+         } catch (err: any) { setError(err.message); }
+         // Зависим от baseFetch, currentChatId
+     }, [baseFetch, currentChatId]);
 
-     const handleResetChat = async () => {
-         if (!token || !currentChatId || !window.confirm('Сбросить контекст этого чата для ИИ? Сообщения останутся.')) {
-             return;
-         }
-         try {
-             const response = await fetch(`${API_BASE_URL}/api/chats/${currentChatId}/reset`, {
-                 method: 'POST',
-                 headers: { 'Authorization': `Bearer ${token}` }
-             });
-             if (!response.ok) throw new Error(`Ошибка ${response.status}`);
-              // Добавить системное сообщение
-              // addSystemMessage('Контекст чата для ИИ сброшен.');
-         } catch (error: any) {
-             setError(`Ошибка сброса чата: ${error.message}`);
-         }
-     };
-
-    // Отправка сообщения (с SSE)
-    const handleSendMessage = async (event?: React.FormEvent<HTMLFormElement>) => {
+    // --- Отправка Сообщения (SSE) ---
+    // Используем стандартный fetch для SSE
+    const handleSendMessage = useCallback(async (event?: React.FormEvent<HTMLFormElement>) => {
         event?.preventDefault();
         const content = newMessageContent.trim();
-        if (!token || !currentChatId || !content || isSendingMessage) return;
+        // Перепроверяем все условия перед отправкой
+        if (!token || !currentChatId || !content || isSendingMessage) {
+             console.warn("Отправка сообщения прервана:", {token: !!token, currentChatId, content, isSendingMessage});
+             return;
+        }
 
         setIsSendingMessage(true);
         setError(null);
 
         const userMessage: Message = {
-            id: `user-${Date.now()}`, // Временный ID
-            content: content,
-            is_bot: false,
-            created_at: new Date().toISOString(),
-            chat_id: currentChatId,
-            user_id: user?.id
+            id: `user-${Date.now()}`, content: content, is_bot: false,
+            created_at: new Date().toISOString(), chat_id: currentChatId, user_id: user?.id
         };
-
-        // Оптимистичное добавление сообщения пользователя
         setMessages(prev => [...prev, userMessage]);
-        setNewMessageContent(''); // Очистка поля ввода
+        setNewMessageContent('');
 
-        // Добавление плейсхолдера для ответа бота
-        const botPlaceholderId = `bot-${Date.now()}`;
+        const tempBotId = `bot-${Date.now()}`;
         const botPlaceholder: Message = {
-            id: botPlaceholderId,
-            content: '', // Пустое, будет индикатор загрузки в рендеринге
-            is_bot: true,
-            created_at: new Date().toISOString(),
-            chat_id: currentChatId,
+            id: tempBotId, tempId: tempBotId, content: '', is_bot: true,
+            created_at: new Date().toISOString(), chat_id: currentChatId,
+            isStreaming: true, thinkingSeconds: 0,
         };
         setMessages(prev => [...prev, botPlaceholder]);
 
-        // --- Запрос SSE ---
+        let sseReader: ReadableStreamDefaultReader<Uint8Array> | null = null;
+        const url = `${API_BASE_URL}/api/chats/${currentChatId}/messages`;
+        console.log(`SSE Запрос: POST ${url}`);
+
         try {
-            const response = await fetch(`${API_BASE_URL}/api/chats/${currentChatId}/messages`, {
+            const response = await fetch(url, {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ content: content, model_id: currentModel }) // Отправляем и модель
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                    'Accept': 'text/event-stream'
+                },
+                body: JSON.stringify({ content: content, model_id: currentModel }) // Убедимся, что модель передается
             });
+            console.log(`SSE Ответ: Статус ${response.status}`);
 
+            if (response.status === 401) { localStorage.clear(); navigate('/auth'); throw new Error("Unauthorized"); }
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ error: `Ошибка: ${response.statusText}` }));
-                throw new Error(errorData.error || `Ошибка ${response.status}`);
+                 let errorBody = { error: `Ошибка ${response.status}` };
+                 try { errorBody = await response.json(); } catch (e) { }
+                 throw new Error(`Ошибка отправки: ${ (errorBody as any)?.detail || (errorBody as any)?.error || JSON.stringify(errorBody)}`);
             }
-            if (!response.body) {
-                throw new Error('Ответ сервера не содержит тело для стриминга.');
-            }
+            if (!response.body) throw new Error('Нет тела ответа для стриминга.');
 
-            // Обработка потока
-            const reader = response.body.getReader();
+            sseReader = response.body.getReader();
             const decoder = new TextDecoder();
             let buffer = '';
             let accumulatedContent = '';
             let accumulatedThoughts = '';
+            let finalMessageId: string | null = null;
 
             while (true) {
-                const { value, done } = await reader.read();
+                const { value, done } = await sseReader.read();
                 if (done) break;
                 buffer += decoder.decode(value, { stream: true });
-
                 let boundaryIndex;
                 while ((boundaryIndex = buffer.indexOf('\n\n')) >= 0) {
                     const messageChunk = buffer.substring(0, boundaryIndex);
                     buffer = buffer.substring(boundaryIndex + 2);
-
                     if (messageChunk.startsWith('data:')) {
                         try {
                             const data = JSON.parse(messageChunk.substring(5).trim());
-
-                            if (data.error) {
-                                throw new Error(data.error); // Обрабатываем ошибку из потока
-                            }
-
-                            if (data.content) {
-                                accumulatedContent += data.content;
-                            }
-                            if (data.thoughts) {
-                                accumulatedThoughts += data.thoughts;
-                            }
-
-                            // Обновляем сообщение-плейсхолдер
+                            if (data.error) throw new Error(data.error);
+                            if (data.message_id) finalMessageId = String(data.message_id);
+                            if (data.content) accumulatedContent += data.content;
+                            if (data.thoughts) accumulatedThoughts += data.thoughts;
                             setMessages(prev => prev.map(msg =>
-                                msg.id === botPlaceholderId
-                                    ? { ...msg, content: accumulatedContent, thoughts: accumulatedThoughts || msg.thoughts }
-                                    : msg
+                                msg.tempId === tempBotId ? { ...msg, content: accumulatedContent, thoughts: accumulatedThoughts || msg.thoughts } : msg
                             ));
-
                         } catch (e: any) {
-                            console.error('Ошибка парсинга или обработки чанка SSE:', e);
-                            // Обновляем сообщение бота с ошибкой парсинга
-                            setMessages(prev => prev.map(msg =>
-                                msg.id === botPlaceholderId
-                                ? { ...msg, content: `${msg.content}\n\n**Ошибка обработки ответа**`, thoughts: null }
-                                : msg
+                             console.error('Ошибка парсинга SSE:', e, 'Chunk:', messageChunk);
+                             setMessages(prev => prev.map(msg =>
+                                 msg.tempId === tempBotId ? { ...msg, content: `${msg.content || ''}\n\n<span class="${styles.errorMessageInline}">**Ошибка обработки ответа**</span>`, isStreaming: false, thoughts: null } : msg
                              ));
-                            // Прерываем цикл чтения потока
-                            await reader.cancel(); // Закрываем ридер
-                            throw e; // Пробрасываем ошибку дальше в catch внешнего try
+                             if(sseReader) await sseReader.cancel().catch(e=>console.error("Err cancel:",e));
+                             throw e;
                         }
                     }
-                } // end while(boundaryIndex)
-            } // end while(true) reader loop
+                }
+            } // end while(reader)
 
-            // Поток завершен успешно
-            // Можно сделать финальную очистку или обновление ID сообщения, если бэкенд его присылает
-
-            await fetchChats(); // Обновить список чатов (для last_message)
+            // Обновляем финальное сообщение
+            setMessages(prev => prev.map(msg =>
+                msg.tempId === tempBotId
+                 ? { ...msg,
+                     id: finalMessageId || msg.id, // Обновляем ID если он пришел
+                     isStreaming: false, // Завершаем стрим
+                     // Убираем tempId после завершения
+                     tempId: undefined
+                   }
+                 : msg
+            ));
+            // Перезагружаем чаты для обновления last_message
+             await fetchChats();
 
         } catch (error: any) {
-            console.error('Ошибка при отправке/получении сообщения:', error);
-             // Обновляем сообщение бота с текстом ошибки
+            console.error('Ошибка SSE:', error);
+            setError(error.message || 'Ошибка соединения');
             setMessages(prev => prev.map(msg =>
-                 msg.id === botPlaceholderId
-                 ? { ...msg, content: `**Произошла ошибка:** ${error.message || 'Неизвестная ошибка'}`, thoughts: null }
-                 : msg
-             ));
+                msg.tempId === tempBotId
+                ? { ...msg, content: `<span class="${styles.errorMessageInline}">**Произошла ошибка**</span>`, isStreaming: false, thoughts: null, tempId: undefined }
+                : msg
+            ));
         } finally {
             setIsSendingMessage(false);
+            if (sseReader && !sseReader.closed) {
+                 try { await sseReader.cancel(); } catch (e) {console.error("Ошибка отмены ридера:", e)}
+            }
+        }
+        // Зависимости: все состояния, которые используются внутри + token/API_BASE_URL
+    }, [newMessageContent, token, currentChatId, currentModel, isSendingMessage, API_BASE_URL, user?.id, fetchChats, navigate]);
+
+    const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            handleSendMessage();
         }
     };
 
-     // Обработчик нажатия Enter в textarea
-     const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-         if (event.key === 'Enter' && !event.shiftKey) {
-             event.preventDefault();
-             handleSendMessage();
-         }
-     };
-
-    // --- Рендеринг ---
+    // --- Рендеринг --- (JSX остается таким же, как в предыдущем ответе)
     return (
         <div className={styles.chatContainer}>
-            {/* Сайдбар */}
+            <div className={`${styles.sidebarOverlay} ${isSidebarOpen ? styles.active : ''}`} onClick={() => setIsSidebarOpen(false)} />
             <div className={`${styles.chatSidebar} ${isSidebarOpen ? styles.active : ''}`}>
-                <div className={styles.sidebarHeader}>
-                    <button className={styles.newChatBtn} onClick={handleNewChat} disabled={isLoadingChats}>
-                        Новый чат
-                    </button>
-                </div>
-                <div className={styles.chatsList}>
-                    {isLoadingChats && <p>Загрузка чатов...</p>}
-                    {!isLoadingChats && chats.length === 0 && <p>Нет доступных чатов.</p>}
-                    {!isLoadingChats && chats.map(chat => (
-                        <div
-                            key={chat.id}
-                            className={`${styles.chatItem} ${chat.id === currentChatId ? styles.active : ''}`}
-                            onClick={() => handleSelectChat(chat.id)}
-                        >
-                            <div className={styles.chatTitle}>{escapeHtml(chat.title)}</div>
-                            {chat.last_message && (
-                                <div className={styles.chatPreview}>{escapeHtml(chat.last_message)}</div>
-                            )}
-                        </div>
-                    ))}
-                </div>
-                 {/* Можно добавить футер сайдбара с информацией о пользователе или выходом */}
+                 <div className={styles.sidebarHeader}>
+                     <button className={styles.newChatBtn} onClick={handleNewChat} disabled={isLoadingChats || isSendingMessage}>
+                         {isLoadingChats ? 'Создание...' : 'Новый чат'}
+                     </button>
+                 </div>
+                 <div className={styles.chatsList}>
+                     {/* ... рендер списка чатов ... */}
+                     {isLoadingChats && chats.length === 0 && <p>Загрузка...</p>}
+                     {!isLoadingChats && chats.length === 0 && <p>Нет чатов.</p>}
+                     {chats.map(chat => (
+                         <div key={chat.id} className={`${styles.chatItem} ${chat.id === currentChatId ? styles.active : ''}`} onClick={() => handleSelectChat(chat.id)}>
+                             <div className={styles.chatTitle}>{escapeHtml(chat.title)}</div>
+                             {chat.last_message && <div className={styles.chatPreview}>{escapeHtml(chat.last_message)}</div>}
+                         </div>
+                     ))}
+                 </div>
+                  <div className={styles.sidebarFooter}>
+                     <button onClick={handleLogout} className={styles.logoutBtn}>Выйти</button>
+                  </div>
             </div>
-            
 
-            {/* Основная область чата */}
             <div className={styles.chatMain}>
-                {/* Шапка чата */}
                 <div className={styles.chatHeader}>
-                     {/* Кнопка мобильного меню */}
-                     <button className={styles.toggleSidebarBtn} onClick={() => setIsSidebarOpen(!isSidebarOpen)}>☰</button>
-
+                    <button className={styles.toggleSidebarBtn} onClick={() => setIsSidebarOpen(!isSidebarOpen)}>☰</button>
                     <div className={styles.userProfile}>
-                        {/* Отображение имени пользователя */}
-                        <span>{user?.name || 'Загрузка...'}</span>
-                        {/* Селектор моделей */}
-                        <select
-                            id="modelSelect"
-                            className={styles.modelSelect}
-                            value={currentModel || ''}
-                            onChange={handleModelChange}
-                            disabled={isLoadingModels || !currentChatId} // Блокируем, если нет чата
-                        >
-                            {isLoadingModels && <option value="">Загрузка моделей...</option>}
-                            {!isLoadingModels && models.length === 0 && <option value="">Модели не найдены</option>}
-                            {!isLoadingModels && models.map(model => (
-                                <option key={model.id} value={model.id}>{escapeHtml(model.name)}</option>
-                            ))}
+                        <span>{user?.name || '...'}</span>
+                        <select id="modelSelect" className={styles.modelSelect} value={currentModel || ''} onChange={handleModelChange} disabled={isLoadingModels || !currentChatId || isSendingMessage}>
+                            {isLoadingModels && <option value="">Загрузка...</option>}
+                            {!isLoadingModels && models.length === 0 && <option value="">Нет моделей</option>}
+                            {models.map(model => <option key={model.id} value={model.id}>{escapeHtml(model.name)}</option> )}
                         </select>
                     </div>
                     <div className={styles.headerActions}>
-                        <button className={styles.themeToggle} title="Переключить тему" onClick={handleThemeToggle}>
-                            {theme === 'light' ? '🌙' : '☀️'}
-                        </button>
-                        <button className={styles.resetChatBtn} title="Сбросить контекст чата"
-                                onClick={handleResetChat} disabled={!currentChatId}>
-                            🔄
-                        </button>
-                         {/* Кнопка Выход */}
-                         <button title="Выйти" className={styles.resetChatBtn} onClick={() => {
-                             localStorage.removeItem('token');
-                             localStorage.removeItem('user');
-                             navigate('/auth');
-                         }}>
-                             🚪
-                         </button>
+                        <button className={styles.themeToggle} title="Тема" onClick={handleThemeToggle}> {theme === 'light' ? '🌙' : '☀️'} </button>
+                        <button className={styles.resetChatBtn} title="Сбросить" onClick={handleResetChat} disabled={!currentChatId || isSendingMessage}> 🔄 </button>
                     </div>
                 </div>
 
-                {/* Контейнер сообщений */}
-                <div className={styles.messagesContainer}>
-                     {error && <p style={{color: 'red', textAlign:'center'}}>Ошибка: {error}</p>}
-                     {!currentChatId && !isLoadingChats && <p style={{textAlign:'center'}}>Выберите или создайте чат, чтобы начать общение.</p>}
-                     {isLoadingMessages && <p style={{textAlign:'center'}}>Загрузка сообщений...</p>}
-                     {!isLoadingMessages && messages.length === 0 && currentChatId && <p style={{textAlign:'center'}}>Сообщений пока нет.</p>}
+                <div className={styles.messagesContainer} ref={messagesContainerRef}>
+                    {error && <div className={styles.errorMessage}>{error}</div>}
+                    {/* ... информационные сообщения ... */}
+                    {!currentChatId && !isLoadingChats && chats.length > 0 && <p className={styles.infoMessage}>Выберите чат.</p>}
+                    {isLoadingMessages && <p className={styles.infoMessage}>Загрузка...</p>}
+                    {!isLoadingMessages && messages.length === 0 && currentChatId && <p className={styles.infoMessage}>Нет сообщений.</p>}
 
-                    {messages.map((msg, index) => (
-                        <div key={msg.id || `msg-${index}`} className={`${styles.message} ${msg.is_bot ? styles.ai : styles.user}`}>
+                    {messages.map((msg) => (
+                        <div key={msg.id} className={`${styles.message} ${msg.is_bot ? styles.ai : styles.user}`}>
                             {msg.is_bot && <div className={styles.messageAvatar}>🤖</div>}
                             <div className={styles.messageContent}>
+                                {/* ... рендер размышлений ... */}
                                 {msg.thoughts && (
                                     <div className={styles.thoughtsContainer}>
-                                        {/* TODO: Реализовать логику сворачивания/разворачивания */}
-                                        <div className={styles.thoughtsHeader}>
-                                             🤔 Размышления <span className={styles.thinkingTime}></span> {/* Таймер сюда? */}
-                                         </div>
-                                         <div className={styles.thoughtsContent}
-                                              dangerouslySetInnerHTML={{ __html: marked.parse(msg.thoughts) }}>
-                                         </div>
+                                        <div className={styles.thoughtsHeader} onClick={() => handleToggleThoughts(msg.id)} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleToggleThoughts(msg.id); }}>
+                                            🤔 {thoughtsVisibility[msg.id] ? 'Скрыть' : 'Показать'} размышления
+                                            <span className={styles.thinkingTime}> {msg.thinkingSeconds !== undefined && `${msg.thinkingSeconds}s`} </span>
+                                        </div>
+                                        {thoughtsVisibility[msg.id] && (
+                                             <div className={styles.thoughtsContent} key={`${msg.id}-thoughts`} dangerouslySetInnerHTML={{ __html: marked.parse(msg.thoughts) }} />
+                                        )}
                                     </div>
                                 )}
-                                {/* Индикатор загрузки для плейсхолдера */}
-                                {msg.is_bot && msg.content === '' && !msg.thoughts && (
-                                     <div className={styles.messageText}><i>Печатает...</i></div>
-                                )}
-                                 {/* Отображение контента */}
-                                 {msg.content && (
-                                    <div className={styles.messageText}
-                                         dangerouslySetInnerHTML={{ __html: msg.is_bot ? marked.parse(msg.content) : `<p>${escapeHtml(msg.content)}</p>` }}>
-                                    </div>
-                                )}
-                                <div className={styles.messageTime}>
-                                    {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </div>
+                                {/* ... рендер основного контента ... */}
+                                {msg.content ? (
+                                    <div className={styles.messageText} key={`${msg.id}-content`} dangerouslySetInnerHTML={{ __html: msg.is_bot ? marked.parse(msg.content) : `<p>${escapeHtml(msg.content)}</p>` }} />
+                                ) : ( msg.is_bot && msg.isStreaming && <div className={styles.typingIndicator}> <span/><span/><span/> </div> )
+                                }
+                                {/* ... рендер времени ... */}
+                                <div className={styles.messageTime}> {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} </div>
                             </div>
                             {!msg.is_bot && <div className={styles.messageAvatar}>👤</div>}
                         </div>
                     ))}
-                    {/* Элемент для скролла */}
-                    <div ref={messagesEndRef} />
+                    <div ref={messagesEndRef} style={{ height: '1px' }} />
                 </div>
 
-                {/* Поле ввода */}
                 <div className={styles.inputContainer}>
                     <form onSubmit={handleSendMessage}>
-                        <textarea
-                            ref={textareaRef}
-                            placeholder={currentChatId ? "Введите сообщение..." : "Выберите чат"}
-                            rows={1}
-                            maxLength={2000} // Уточните максимальную длину
-                            value={newMessageContent}
-                            onChange={(e) => setNewMessageContent(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            disabled={!currentChatId || isSendingMessage} // Блокируем ввод
-                        />
+                        {/* ... поле ввода и кнопки ... */}
+                         <textarea ref={textareaRef} placeholder={currentChatId ? "Введите сообщение..." : "Выберите чат"} rows={1} maxLength={2000} value={newMessageContent} onChange={(e) => setNewMessageContent(e.target.value)} onKeyDown={handleKeyDown} disabled={!currentChatId || isSendingMessage} />
                         <div className={styles.inputActions}>
-                            <button type="button" className={styles.attachBtn} title="Прикрепить файл (не реализовано)" disabled={!currentChatId || isSendingMessage}>📎</button>
-                            <button type="submit" className={styles.sendBtn} title="Отправить" disabled={!currentChatId || !newMessageContent.trim() || isSendingMessage}>
-                                {isSendingMessage ? '...' : '➤'}
-                            </button>
+                            <button type="button" className={styles.attachBtn} title="Прикрепить" disabled>📎</button>
+                            <button type="submit" className={styles.sendBtn} title="Отправить" disabled={!currentChatId || !newMessageContent.trim() || isSendingMessage}> {isSendingMessage ? '...' : '➤'} </button>
                         </div>
                     </form>
                 </div>

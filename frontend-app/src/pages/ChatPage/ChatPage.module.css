@@ -3,77 +3,91 @@
 .chatContainer {
     display: grid;
     grid-template-columns: clamp(240px, 22vw, 300px) 1fr;
-    /* --- УБИРАЕМ height: 100% --- */
-    /* height: 100%; */
-    /* --- ДОБАВЛЯЕМ flex: 1 --- */
-    flex: 1; /* Говорит элементу занять все доступное пространство в flex-родителе (#root) */
-    /* --- ДОБАВЛЯЕМ min-height: 0 (важно для flex/grid детей) --- */
-    min-height: 0; /* Предотвращает разрастание из-за контента, позволяет сжиматься */
-    /* --- ОСТАЛЬНОЕ ОСТАВЛЯЕМ --- */
+    flex: 1; /* Заполняет #root */
+    min-height: 0; /* Позволяет сжиматься */
     width: 100%;
     max-width: 100%;
-    margin: 0 auto;
-    overflow: hidden;
+    overflow: hidden; /* !!! Предотвращает скролл за пределы этого контейнера !!! */
     background-color: var(--bg-color);
 }
 
-
 /* Боковая панель */
 .chatSidebar {
-    height: 100%; /* Строго 100% высоты */
+    /* УБИРАЕМ height: 100%; пусть grid решает */
     display: flex;
     flex-direction: column;
     border-right: 1px solid var(--border-color);
-    background: var(--bg-secondary); /* Слегка другой фон */
-    transition: transform 0.3s ease, box-shadow 0.3s ease; /* Для мобильной анимации */
+    background: var(--bg-secondary);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    overflow: hidden; /* Содержимое не должно вылезать */
 }
 
 .sidebarHeader {
     padding: 1rem;
     border-bottom: 1px solid var(--border-color);
     flex-shrink: 0;
-    display: flex; /* Для выравнивания кнопки */
+    display: flex;
 }
 
+
 .newChatBtn {
-    /* Используем стиль .primaryButton */
     padding: 0.6rem 1.2rem;
     border: 1px solid transparent;
-    border-radius: var(--border-radius-md); /* Менее круглый */
+    border-radius: var(--border-radius-md);
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
     text-decoration: none;
-    display: flex; /* Для иконки + текста (если нужно) */
+    display: flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
     background: var(--primary-color);
     color: var(--primary-color-text);
-    width: 100%; /* Растянем кнопку */
+    width: 100%;
     font-size: var(--font-size-sm);
 }
-.newChatBtn:hover {
+.newChatBtn:hover:not(:disabled) {
     background: var(--primary-color-dark);
     box-shadow: var(--shadow-sm);
 }
-.newChatBtn:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-}
-
+/* :disabled стили применяются глобально из index.css */
 
 .chatsList {
-    flex: 1;
-    overflow-y: auto;
+    flex: 1; /* Занимает доступное место */
+    min-height: 0; /* Обязательно для flex: 1 */
+    overflow-y: auto; /* !!! Скролл здесь !!! */
     overflow-x: hidden;
-    padding: 0.75rem; /* Уменьшен padding */
+    padding: 0.75rem;
 }
-.chatsList p { /* Текст "Загрузка чатов", "Нет чатов" */
+.chatsList p {
     text-align: center;
     color: var(--text-light);
     padding: 1rem;
     font-size: var(--font-size-sm);
+}
+
+.sidebarFooter {
+    padding: 1rem;
+    border-top: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+.logoutBtn {
+    width: 100%;
+    padding: 0.6rem 1.2rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-md);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-color: var(--bg-tertiary);
+    color: var(--text-color);
+    font-size: var(--font-size-sm);
+}
+.logoutBtn:hover {
+    background-color: var(--border-color);
+    border-color: var(--secondary-color);
 }
 
 
@@ -82,20 +96,17 @@
     border-radius: var(--border-radius-md);
     margin-bottom: 0.5rem;
     cursor: pointer;
-    transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
-    border: 1px solid transparent; /* Для рамки при ховере/активности */
+    transition: background-color 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+    border: 1px solid transparent;
 }
-
 .chatItem:hover {
-    background: var(--bg-tertiary);
+    background: var(--bg-tertiary); /* Используем переменную из index.css */
     transform: translateX(3px);
-    /* box-shadow: var(--shadow-sm); */ /* Можно убрать тень для чистоты */
 }
-
 .chatItem.active {
     background: var(--primary-color-light);
-    border-color: var(--primary-color); /* Рамка для активного */
-    color: var(--primary-color-dark); /* Цвет текста активного */
+    border-color: var(--primary-color);
+    color: var(--primary-color-dark);
 }
 .chatItem.active .chatTitle {
     color: var(--primary-color-dark);
@@ -105,158 +116,171 @@
     color: hsl(var(--primary-hue), 30%, 55%);
 }
 
-
 .chatTitle {
     font-weight: 500;
     margin-bottom: 0.25rem;
     color: var(--text-color);
-    font-size: 0.95rem; /* Немного уменьшено */
+    font-size: 0.95rem;
     word-break: break-all;
     line-height: 1.3;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
 }
-
 .chatPreview {
     font-size: var(--font-size-sm);
     color: var(--text-light);
     display: -webkit-box;
     -webkit-line-clamp: 2;
-    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
     line-height: 1.4;
     word-break: break-all;
 }
 
+
 /* Основная область чата */
 .chatMain {
-    height: 100%; /* Строго 100% высоты */
-    min-height: 0;
+    /* УБИРАЕМ height: 100%; пусть grid решает */
+    min-height: 0; /* Обязательно для grid */
     display: grid;
-    grid-template-rows: auto 1fr auto; /* Шапка, сообщения, ввод */
+    grid-template-rows: auto 1fr auto; /* Шапка, Сообщения (все место), Ввод */
     width: 100%;
     background-color: var(--bg-color);
-    overflow: hidden; /* Предотвращаем двойной скролл */
+    overflow: hidden; /* Содержимое не должно вылезать */
 }
 
+/* Шапка чата */
 .chatHeader {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.75rem 1.5rem; /* Скорректирован padding */
+    padding: 0.75rem 1.5rem;
     border-bottom: 1px solid var(--border-color);
     background: var(--bg-color);
-    z-index: 10; /* Выше сайдбара */
+    z-index: 10;
     flex-shrink: 0;
-    gap: 1rem; /* Пространство между элементами */
+    gap: 1rem;
+}
+.userProfile {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-grow: 1;
+    min-width: 0;
+}
+.userProfile span {
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 150px;
+}
+@media (min-width: 769px) {
+    .userProfile span { max-width: 250px; }
 }
 
 .headerActions {
     display: flex;
-    gap: 0.5rem; /* Уменьшен gap */
+    gap: 0.5rem;
     align-items: center;
+    flex-shrink: 0;
 }
 
 .themeToggle, .resetChatBtn {
-    padding: 6px; /* Уменьшен padding */
+    padding: 6px;
     border: none;
     background: none;
     cursor: pointer;
     border-radius: 50%;
-    width: 32px; /* Фикс размер */
+    width: 32px;
     height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: background-color 0.2s, color 0.2s;
-    color: var(--text-light); /* Слегка серый */
-    font-size: 1.1rem; /* Размер иконки */
+    color: var(--text-light);
+    font-size: 1.1rem;
 }
-
-.themeToggle:hover, .resetChatBtn:hover {
-    background-color: var(--bg-tertiary);
+.themeToggle:hover, .resetChatBtn:hover:not(:disabled) {
+    background-color: var(--hover-bg);
     color: var(--text-color);
 }
-.resetChatBtn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
+/* :disabled стили применяются глобально */
 
-.userProfile {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    flex-grow: 1; /* Занимает доступное пространство */
-    min-width: 0; /* Для правильного сжатия */
-}
-.userProfile span { /* Имя пользователя */
-    font-weight: 500;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-
-/* Стили для сообщений */
+/* Контейнер сообщений */
 .messagesContainer {
-    overflow-y: auto; /* Главный скролл здесь */
-    padding: 1.5rem; /* Увеличен padding */
+    /* Высота определяется строкой 1fr в grid .chatMain */
+    min-height: 0; /* Обязательно для grid 1fr */
+    overflow-y: auto; /* !!! Скролл здесь !!! */
+    padding: 1.5rem;
     max-width: 100%;
-    min-height: 0; 
+    scroll-behavior: smooth;
 }
 .messagesContainer > *:last-child {
-    margin-bottom: 0.5rem; /* Небольшой отступ снизу от последнего сообщения */
+    margin-bottom: 0.5rem;
 }
-/* Сообщения об ошибке/загрузке */
-.messagesContainer > p {
+.infoMessage {
     text-align: center;
     color: var(--text-light);
     padding: 2rem 1rem;
 }
+.errorMessage {
+    text-align: center;
+    color: var(--error);
+    background-color: hsla(var(--error-h, 0), 80%, 90%, 1); /* Используем HSL */
+    border: 1px solid var(--error);
+    padding: 0.75rem 1rem;
+    border-radius: var(--border-radius-md);
+    margin: 1rem auto;
+    max-width: 80%;
+}
+[data-theme="dark"] .errorMessage {
+    background-color: hsla(var(--error-h, 0), 40%, 30%, 0.5);
+    color: hsla(var(--error-h, 0), 80%, 80%, 1);
+}
 
-
+/* Сообщения */
 .message {
     display: flex;
-    gap: 0.75rem; /* Уменьшен gap */
-    margin-bottom: 1.5rem; /* Скорректирован отступ */
-    max-width: 85%; /* Макс ширина сообщения */
-    align-items: flex-end; /* Выравнивание по низу */
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    max-width: 85%;
+    align-items: flex-end;
 }
-
-.message.user {
-    margin-left: auto;
-    flex-direction: row-reverse;
-}
-
-.message.ai {
-    margin-right: auto;
-}
+.message.user { margin-left: auto; flex-direction: row-reverse; }
+.message.ai { margin-right: auto; }
 
 .messageContent {
     flex: 1;
     min-width: 0;
-    padding: 0.75rem 1rem; /* Скорректирован padding */
-    border-radius: var(--border-radius-lg); /* Более скругленные */
+    padding: 0.75rem 1rem;
+    border-radius: var(--border-radius-lg);
     position: relative;
     word-wrap: break-word;
     overflow-wrap: break-word;
     line-height: 1.5;
+    box-shadow: var(--shadow-sm);
 }
-
 .message.user .messageContent {
     background: var(--primary-color);
     color: var(--primary-color-text);
-    border-bottom-right-radius: var(--border-radius-sm); /* "Хвостик" */
+    border-bottom-right-radius: var(--border-radius-sm);
 }
 .message.ai .messageContent {
     background: var(--bg-secondary);
     color: var(--text-color);
     border: 1px solid var(--border-color);
-    border-bottom-left-radius: var(--border-radius-sm); /* "Хвостик" */
+    border-bottom-left-radius: var(--border-radius-sm);
+}
+.message.ai .messageContent .errorMessageInline {
+    color: var(--error);
+    font-weight: bold;
 }
 
-
 .messageAvatar {
-    width: 32px; /* Немного меньше */
+    width: 32px;
     height: 32px;
     border-radius: 50%;
     display: flex;
@@ -266,282 +290,69 @@
     color: var(--text-light);
     flex-shrink: 0;
     font-size: 1rem;
-    /* align-self: flex-end; Убрано, т.к. align-items: flex-end у .message */
-    /* margin-bottom: 5px; */ /* Убрано */
     border: 1px solid var(--border-color);
+    margin-bottom: 5px;
 }
 .message.user .messageAvatar {
-    background-color: hsl(var(--primary-hue), 20%, 85%); /* Немного другой фон для пользователя */
+    background-color: hsl(var(--primary-hue), 20%, 85%);
 }
 
 .messageTime {
-    font-size: 0.75rem; /* Очень маленький */
+    font-size: 0.75rem;
     color: var(--text-light);
     margin-top: 0.3rem;
-    display: block; /* Время всегда на новой строке */
+    display: block;
     width: 100%;
     opacity: 0.8;
 }
+.message.user .messageTime { text-align: right; color: hsla(0, 0%, 100%, 0.7); }
+.message.ai .messageTime { text-align: left; color: var(--text-light); }
 
-.message.user .messageTime {
-    text-align: right;
-    color: hsla(0, 0%, 100%, 0.7); /* Менее яркий */
-}
-.message.ai .messageTime {
-     text-align: left;
-     color: var(--text-light);
- }
-
-
-/* Форма ввода */
-.inputContainer {
-    padding: 1rem 1.5rem; /* Скорректирован padding */
-    border-top: 1px solid var(--border-color);
-    background: var(--bg-color);
-    z-index: 1;
-    flex-shrink: 0;
-}
-
-.inputContainer form {
-    display: flex;
-    align-items: flex-end;
-    gap: 0.75rem; /* Скорректирован gap */
-    background-color: var(--bg-secondary); /* Фон для поля ввода */
-    border-radius: var(--border-radius-lg); /* Скругляем всю область */
-    border: 1px solid var(--border-color);
-    padding: 0.5rem; /* Внутренний padding */
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-.inputContainer form:focus-within { /* Подсветка при фокусе внутри */
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px hsla(var(--primary-hue), var(--primary-saturation), var(--primary-lightness), 0.2);
-}
-
-
-.inputContainer textarea {
-    flex: 1;
-    min-width: 0;
-    border: none; /* Убираем рамку у textarea */
-    resize: none;
-    max-height: 150px; /* Уменьшена макс высота */
-    overflow-y: auto;
-    background: transparent; /* Прозрачный фон */
-    color: var(--text-color);
-    font-size: 1rem;
-    line-height: 1.5;
-    padding: 0.5rem; /* Внутренний padding для текста */
-}
-.inputContainer textarea:focus {
-    outline: none; /* Убираем стандартный outline */
-    box-shadow: none; /* Убираем тень */
-}
-.inputContainer textarea::placeholder {
-    color: var(--text-light);
-    opacity: 0.8;
-}
-
-.inputActions {
-    display: flex;
-    gap: 0.5rem; /* Уменьшен gap */
-}
-
-.attachBtn, .sendBtn {
-    background: transparent;
-    color: var(--text-light);
-    border: none;
-    width: 36px; /* Уменьшен размер */
-    height: 36px;
-    padding: 0;
-    border-radius: 50%;
-    transition: background-color 0.2s, color 0.2s, transform 0.1s;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.3rem; /* Размер иконки */
-    flex-shrink: 0;
-}
-.attachBtn:hover {
-    background: var(--bg-tertiary);
-    color: var(--text-color);
-}
-.attachBtn:disabled {
-     opacity: 0.5;
-     cursor: not-allowed;
-}
-
-.sendBtn {
-    background: var(--primary-color);
-    color: var(--primary-color-text);
-}
-.sendBtn:hover {
-    background: var(--primary-color-dark);
-}
-.sendBtn:disabled {
-    background: hsl(var(--primary-hue), 20%, 80%); /* Серый для неактивной кнопки */
-    color: var(--text-light);
-    cursor: not-allowed;
-}
-.sendBtn:active:not(:disabled) {
-    transform: scale(0.95);
-}
-
-
-/* Стили для кода и Markdown в сообщениях */
-.messageText {
-    /* Базовые стили уже есть у .messageContent */
-}
-
+/* Текст сообщения и Markdown */
+.messageText { }
 .messageText p:first-child { margin-top: 0; }
 .messageText p:last-child { margin-bottom: 0; }
-
-
 .messageText pre {
     max-width: 100%;
-    background: var(--bg-tertiary); /* Фон кода чуть темнее */
+    background: var(--bg-tertiary);
     border: 1px solid var(--border-color);
-    padding: 0.8em 1em; /* Скорректирован padding */
+    padding: 0.8em 1em;
     border-radius: var(--border-radius-md);
     margin: 0.75em 0;
-    font-size: 0.85em; /* Мельче шрифт кода */
+    font-size: 0.85em;
     line-height: 1.45;
+    overflow-x: auto;
 }
 [data-theme="dark"] .messageText pre {
-    background: hsl(var(--primary-hue), 10%, 10%); /* Очень темный фон для кода в темной теме */
+    background: hsl(var(--primary-hue), 10%, 10%);
     border-color: hsl(var(--primary-hue), 10%, 25%);
 }
-
-
-/* Инлайн-код */
 .messageText :not(pre) > code {
     background: var(--bg-tertiary);
     border: 1px solid var(--border-color);
     padding: 0.15em 0.4em;
     border-radius: var(--border-radius-sm);
     font-size: 0.85em;
+    word-break: break-all;
 }
 [data-theme="dark"] .messageText :not(pre) > code {
      background: hsl(var(--primary-hue), 10%, 25%);
      border-color: hsl(var(--primary-hue), 10%, 35%);
 }
-
-/* Заголовки в Markdown */
-.messageText h1, .messageText h2, .messageText h3, .messageText h4 {
-    margin: 1.2em 0 0.6em;
-    font-weight: 600;
-    line-height: 1.3;
-    border-bottom: 1px solid var(--border-color); /* Линия под заголовком */
-    padding-bottom: 0.3em;
-}
-.messageText h1 { font-size: 1.4em; }
-.messageText h2 { font-size: 1.25em; }
-.messageText h3 { font-size: 1.1em; }
-.messageText h4 { font-size: 1em; font-weight: 500; border-bottom: none;}
-
-
-.messageText ul,
-.messageText ol {
-    margin: 0.75em 0;
-    padding-left: 1.5em; /* Чуть меньше отступ */
-}
-
-.messageText li {
-    margin: 0.3em 0;
-}
-.messageText li::marker { /* Цвет маркеров списка */
-    color: var(--text-light);
-}
-
-
-.messageText blockquote {
-    border-left: 3px solid var(--primary-color);
-    margin: 1em 0;
-    padding-left: 1em;
-    color: var(--text-light);
-    font-style: italic;
-}
-
-.messageText a {
-    /* Стили наследуются из глобальных */
-    font-weight: 500; /* Ссылки чуть жирнее */
-}
-
-
-/* Таблицы */
-.messageText table {
-    border-collapse: collapse;
-    margin: 1.2em 0;
-    width: 100%; /* Растягиваем */
-    max-width: 100%;
-    overflow-x: auto;
-    display: table; /* Меняем display */
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius-md); /* Скругляем углы таблицы */
-    font-size: 0.9em;
-}
-.messageText th,
-.messageText td {
-    border: none; /* Убираем внутренние границы */
-    border-bottom: 1px solid var(--border-color); /* Горизонтальные линии */
-    padding: 0.6em 0.8em;
-    text-align: left;
-}
-.messageText tr:last-child td {
-    border-bottom: none; /* Убираем границу у последней строки */
-}
-.messageText th {
-    background-color: var(--bg-secondary);
-    font-weight: 600;
-}
-.messageText tr:nth-child(even) { /* Чередование строк */
-     background-color: var(--bg-secondary);
-}
-[data-theme="dark"] .messageText tr:nth-child(even) {
-    background-color: hsl(var(--primary-hue), 10%, 18%);
-}
-
-
-.messageText hr {
-    border: none;
-    border-top: 1px dashed var(--border-color); /* Пунктирная линия */
-    margin: 1.5em 0;
-}
-
-
-/* Селектор моделей */
-.modelSelect {
-    padding: 0.4rem 0.8rem; /* Компактнее */
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius-md);
-    background: var(--bg-secondary); /* Фон селекта */
-    font-size: var(--font-size-sm);
-    color: var(--text-color);
-    box-shadow: var(--shadow-sm);
-    transition: border-color 0.2s, box-shadow 0.2s;
-    cursor: pointer;
-    max-width: 180px; /* Ограничим ширину */
-    height: 36px; /* Фикс высота как у кнопок */
-    appearance: none; /* Убираем стандартный вид */
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E"); /* Своя стрелка */
-    background-repeat: no-repeat;
-    background-position: right 0.5rem center;
-    background-size: 1.2em 1.2em;
-    padding-right: 2rem; /* Место для стрелки */
-}
-.modelSelect:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px hsla(var(--primary-hue), var(--primary-saturation), var(--primary-lightness), 0.2);
-}
-.modelSelect:disabled {
-     opacity: 0.6;
-     cursor: not-allowed;
-     background-color: var(--bg-tertiary);
- }
-
-
-/* Подсветка синтаксиса (предполагаем, что CSS highlight.js подключен) */
-.messageText .hljs {
+.messageText h1, .messageText h2, .messageText h3, .messageText h4 { margin: 1.2em 0 0.6em; font-weight: 600; line-height: 1.3; border-bottom: 1px solid var(--border-color); padding-bottom: 0.3em; }
+.messageText h1 { font-size: 1.4em; } .messageText h2 { font-size: 1.25em; } .messageText h3 { font-size: 1.1em; } .messageText h4 { font-size: 1em; font-weight: 500; border-bottom: none;}
+.messageText ul, .messageText ol { margin: 0.75em 0; padding-left: 1.5em; }
+.messageText li { margin: 0.3em 0; } .messageText li::marker { color: var(--text-light); }
+.messageText blockquote { border-left: 3px solid var(--primary-color); margin: 1em 0; padding-left: 1em; color: var(--text-light); font-style: italic; }
+.messageText a { font-weight: 500; }
+.messageText table { border-collapse: collapse; margin: 1.2em 0; width: auto; max-width: 100%; display: block; overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--border-radius-md); font-size: 0.9em; }
+.messageText th, .messageText td { border: none; border-bottom: 1px solid var(--border-color); padding: 0.6em 0.8em; text-align: left; white-space: nowrap; }
+.messageText tr:last-child td { border-bottom: none; }
+.messageText th { background-color: var(--bg-secondary); font-weight: 600; }
+.messageText tr:nth-child(even) { background-color: var(--bg-secondary); }
+[data-theme="dark"] .messageText tr:nth-child(even) { background-color: hsl(var(--primary-hue), 10%, 18%); }
+.messageText hr { border: none; border-top: 1px dashed var(--border-color); margin: 1.5em 0; }
+.messageText .hljs { /* Стили подсветки применяются из импортированного CSS */
     padding: 1em;
     border-radius: var(--border-radius-md);
     margin: 0.75em 0;
@@ -549,31 +360,32 @@
     font-size: 0.85em;
     line-height: 1.5;
     border: 1px solid var(--border-color);
+    background: var(--bg-tertiary); /* Убедимся, что фон соответствует */
+}
+[data-theme="dark"] .messageText .hljs {
+    background: hsl(var(--primary-hue), 10%, 10%);
+    border-color: hsl(var(--primary-hue), 10%, 25%);
 }
 
 
 /* Блок размышлений */
 .thoughtsContainer {
-    margin: 0.5rem 0 0.25rem;
-    background: var(--bg-secondary);
+    margin: 0.5rem 0 0.75rem;
+    background: var(--bg-tertiary);
     border-radius: var(--border-radius-md);
     border: 1px solid var(--border-color);
     max-width: 100%;
-    overflow: hidden; /* Чтобы скругление работало */
+    overflow: hidden;
     transition: background-color 0.2s ease;
 }
-.message.user .thoughtsContainer { /* Размышления в сообщении пользователя (если возможно) */
+.message.user .thoughtsContainer {
     background-color: hsla(0, 0%, 100%, 0.1);
     border-color: hsla(0, 0%, 100%, 0.2);
 }
-.message.user .thoughtsContainer .thoughtsHeader {
-    color: hsla(0, 0%, 100%, 0.8);
+[data-theme="dark"] .thoughtsContainer {
+    background: hsl(var(--primary-hue), 10%, 22%);
+    border-color: hsl(var(--primary-hue), 10%, 30%);
 }
-.message.user .thoughtsContainer .thoughtsContent {
-    border-color: hsla(0, 0%, 100%, 0.2);
-    color: hsla(0, 0%, 100%, 0.8);
-}
-
 
 .thoughtsHeader {
     padding: 0.5rem 1rem;
@@ -583,14 +395,19 @@
     gap: 0.5rem;
     font-weight: 500;
     transition: background-color 0.2s;
-    font-size: 0.8rem; /* Мельче шрифт заголовка */
+    font-size: 0.8rem;
     color: var(--text-light);
+    user-select: none;
 }
-.thoughtsHeader:hover {
-    background: var(--bg-tertiary);
+.thoughtsHeader:hover, .thoughtsHeader:focus {
+    background: var(--hover-bg);
+    outline: none;
 }
 [data-theme="dark"] .thoughtsHeader:hover {
-     background-color: hsl(var(--primary-hue), 10%, 25%);
+    background-color: hsl(var(--primary-hue), 10%, 28%);
+}
+.thoughtsHeader:focus-visible {
+    box-shadow: 0 0 0 2px var(--primary-color);
 }
 
 .thoughtsContent {
@@ -600,40 +417,176 @@
     line-height: 1.5;
     white-space: pre-wrap;
     word-wrap: break-word;
-    max-height: 250px;
+    max-height: 300px;
     overflow-y: auto;
-    color: var(--text-color); /* Явный цвет текста */
+    color: var(--text-color);
 }
-/* Стили кода внутри размышлений */
 .thoughtsContent pre {
-    background: var(--bg-color); /* Фон кода светлее фона блока */
+    background: var(--bg-secondary);
     font-size: 0.9em;
     margin: 0.5em 0;
     padding: 0.6em 0.8em;
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--border-color);
+    overflow-x: auto;
 }
 .thoughtsContent :not(pre) > code {
-    background: var(--bg-color);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
     font-size: 0.9em;
     padding: 0.1em 0.3em;
+    border-radius: var(--border-radius-sm);
 }
 [data-theme="dark"] .thoughtsContent pre,
 [data-theme="dark"] .thoughtsContent :not(pre) > code {
-     background: hsl(var(--primary-hue), 10%, 15%); /* Фон кода темнее */
+     background: hsl(var(--primary-hue), 10%, 15%);
      border-color: hsl(var(--primary-hue), 10%, 30%);
- }
-
+}
 
 .thinkingTime {
     margin-left: auto;
     font-size: 0.9em;
+    color: var(--text-light); /* Исправлено с --text-secondary */
+    opacity: 0.9;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Индикатор "Печатает..." */
+.typingIndicator {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 0;
+}
+.typingIndicator span {
+  height: 8px;
+  width: 8px;
+  margin: 0 2px;
+  background-color: var(--text-light);
+  border-radius: 50%;
+  opacity: 0.4;
+  animation: typingAnimation 1.4s infinite ease-in-out both;
+}
+.typingIndicator span:nth-child(1) { animation-delay: 0s; }
+.typingIndicator span:nth-child(2) { animation-delay: 0.2s; }
+.typingIndicator span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typingAnimation {
+  0%, 80%, 100% { transform: scale(0); }
+  40% { transform: scale(1.0); opacity: 1; }
+}
+
+/* Поле ввода */
+.inputContainer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--border-color);
+    background: var(--bg-color);
+    z-index: 1;
+    flex-shrink: 0;
+}
+.inputContainer form {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.75rem;
+    background-color: var(--bg-secondary);
+    border-radius: var(--border-radius-lg);
+    border: 1px solid var(--border-color);
+    padding: 0.5rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.inputContainer form:focus-within {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px hsla(var(--primary-hue), var(--primary-saturation), var(--primary-lightness), 0.2);
+}
+
+.inputContainer textarea {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    resize: none;
+    max-height: 150px; /* Уменьшили высоту */
+    overflow-y: auto;
+    background: transparent;
+    color: var(--text-color);
+    font-size: 1rem;
+    line-height: 1.5;
+    padding: 0.5rem;
+}
+.inputContainer textarea:focus {
+    outline: none;
+    box-shadow: none;
+}
+.inputContainer textarea::placeholder {
     color: var(--text-light);
     opacity: 0.8;
 }
 
+.inputActions { display: flex; gap: 0.5rem; }
+
+.attachBtn, .sendBtn {
+    background: transparent;
+    color: var(--text-light);
+    border: none;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: 50%;
+    transition: background-color 0.2s, color 0.2s, transform 0.1s;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+}
+.attachBtn:hover:not(:disabled) { background: var(--hover-bg); color: var(--text-color); }
+/* :disabled стили глобальные */
+
+.sendBtn { background: var(--primary-color); color: var(--primary-color-text); }
+.sendBtn:hover:not(:disabled) { background: var(--primary-color-dark); }
+/* :disabled стили глобальные */
+[data-theme="dark"] .sendBtn:disabled {
+    background: hsl(var(--primary-hue), 10%, 30%);
+}
+
+.sendBtn:active:not(:disabled) { transform: scale(0.95); }
+
+
+/* Селектор моделей */
+.modelSelect {
+    padding: 0.4rem 0.8rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-md);
+    background: var(--bg-secondary);
+    font-size: var(--font-size-sm);
+    color: var(--text-color);
+    box-shadow: var(--shadow-sm);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+    max-width: 180px;
+    height: 36px;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+    background-size: 1.2em 1.2em;
+    padding-right: 2rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.modelSelect:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px hsla(var(--primary-hue), var(--primary-saturation), var(--primary-lightness), 0.2);
+}
+/* :disabled стили глобальные */
+[data-theme="dark"] .modelSelect {
+     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+}
+
 /* Адаптивный дизайн Чата */
 .toggleSidebarBtn {
-    display: none; /* Скрыта по умолчанию */
-    /* Стили копируем из .themeToggle, .resetChatBtn */
+    display: none;
     padding: 6px;
     border: none;
     background: none;
@@ -645,66 +598,48 @@
     justify-content: center;
     transition: background-color 0.2s, color 0.2s;
     color: var(--text-light);
-    font-size: 1.4rem; /* Иконка меню */
-    margin-right: 0.5rem; /* Отступ справа */
-    z-index: 1001; /* Выше сайдбара */
-    order: -1; /* Ставим в начало хедера */
+    font-size: 1.4rem;
+    margin-right: 0.5rem;
+    z-index: 1001;
+    order: -1;
 }
-.toggleSidebarBtn:hover {
-     background-color: var(--bg-tertiary);
-     color: var(--text-color);
+.toggleSidebarBtn:hover { background-color: var(--hover-bg); color: var(--text-color); }
+
+.sidebarOverlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: rgba(0, 0, 0, 0.4);
+    z-index: 999;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
 }
+.sidebarOverlay.active { opacity: 1; visibility: visible; }
 
 
 @media (max-width: 768px) {
-    .chatContainer {
-        grid-template-columns: 1fr; /* Одна колонка */
-    }
+    .chatContainer { grid-template-columns: 1fr; }
 
     .chatSidebar {
         position: fixed;
-        left: 0; /* Начинаем с 0 */
-        top: 0;
-        bottom: 0;
-        width: 85%; /* Ширина сайдбара */
-        max-width: 300px; /* Но не больше */
+        left: 0; top: 0; bottom: 0;
+        width: 85%; max-width: 300px;
         z-index: 1000;
-        transform: translateX(-100%); /* Скрываем сдвигом */
-        box-shadow: var(--shadow-lg); /* Тень для наложения */
+        transform: translateX(-100%);
+        box-shadow: var(--shadow-lg);
         border-right: none;
     }
+    .chatSidebar.active { transform: translateX(0); }
 
-    .chatSidebar.active {
-        transform: translateX(0); /* Показываем */
-    }
-
-    .message { max-width: 95%; } /* Сообщения почти на всю ширину */
-
-    /* Показываем кнопку бургер-меню */
     .toggleSidebarBtn { display: flex; }
 
-    /* Оверлей для затемнения остальной части экрана при открытом меню */
-    .sidebarOverlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-color: rgba(0, 0, 0, 0.5);
-        z-index: 999; /* Ниже сайдбара, но выше остального */
-        opacity: 0;
-        visibility: hidden;
-        transition: opacity 0.3s ease, visibility 0.3s ease;
-    }
-     .sidebarOverlay.active {
-         opacity: 1;
-         visibility: visible;
-     }
-
-     .inputContainer { padding: 0.75rem 1rem; }
-     .inputContainer form { padding: 0.4rem; }
-     .inputContainer textarea { padding: 0.4rem; }
-     .attachBtn, .sendBtn { width: 32px; height: 32px; font-size: 1.1rem;}
-     .messagesContainer { padding: 1rem; }
-     .chatHeader { padding: 0.75rem 1rem; }
+    .chatHeader { padding: 0.75rem 1rem; }
+    .messagesContainer { padding: 1rem; }
+    .inputContainer { padding: 0.75rem 1rem; }
+    .inputContainer form { padding: 0.4rem; }
+    .inputContainer textarea { padding: 0.4rem; font-size: 0.95rem; }
+    .attachBtn, .sendBtn { width: 32px; height: 32px; font-size: 1.1rem;}
+    .message { max-width: 95%; }
+    .userProfile span { max-width: 100px; }
+    .modelSelect { max-width: 120px; font-size: 0.8rem; padding: 0.3rem 0.6rem; height: 32px; padding-right: 1.5rem; }
 }

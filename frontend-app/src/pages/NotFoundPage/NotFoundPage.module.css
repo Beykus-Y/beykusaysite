@@ -1,0 +1,55 @@
+/* src/pages/NotFoundPage/NotFoundPage.module.css */
+
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 4rem 1.5rem;
+    min-height: 300px; /* Минимальная высота для центрирования */
+    flex-grow: 1; /* Занимает доступное пространство в ScrollablePage */
+    color: var(--text-color); /* Используем переменные из index.css */
+  }
+  
+  .title {
+    font-size: clamp(4rem, 15vw, 8rem); /* Очень большой размер */
+    font-weight: 800;
+    color: var(--primary-color); /* Основной цвет */
+    margin-bottom: 0.5rem;
+    line-height: 1;
+  }
+  
+  .message {
+    font-size: clamp(1.2rem, 4vw, 1.8rem);
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 1rem;
+  }
+  
+  .description {
+    font-size: 1rem;
+    color: var(--text-light);
+    max-width: 450px; /* Ограничим ширину текста */
+    margin-bottom: 2.5rem;
+  }
+  
+  .homeLink {
+    /* Стилизуем как кнопку */
+    display: inline-block;
+    padding: 0.8rem 1.8rem;
+    border: 1px solid var(--primary-color);
+    border-radius: var(--border-radius-md);
+    background-color: var(--primary-color);
+    color: var(--primary-color-text);
+    font-weight: 500;
+    text-decoration: none;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+  }
+  
+  .homeLink:hover {
+    background-color: var(--primary-color-dark);
+    border-color: var(--primary-color-dark);
+    transform: translateY(-2px);
+    text-decoration: none; /* Убираем подчеркивание при наведении */
+  }

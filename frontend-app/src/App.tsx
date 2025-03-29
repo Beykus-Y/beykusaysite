@@ -1,75 +1,97 @@
+// src/App.tsx
+
+import React from 'react'; // Добавлен импорт React
 import { Routes, Route, Navigate } from 'react-router-dom';
-import './app.css'; // Общие стили для App, если нужны
+import './app.css'; // Файл может быть пустым или содержать специфичные стили для App
 
 // Импорт компонентов страниц
 import AuthPage from './pages/AuthPage/AuthPage';
 import HomePage from './pages/HomePage/HomePage';
-import ChatPage from './pages/ChatPage/ChatPage'; // Импортируем ChatPage
+import ChatPage from './pages/ChatPage/ChatPage';
+import NotFoundPage from './pages/NotFoundPage/NotFoundPage.tsx';
 
-// Компонент для защиты роутов (пример)
+// --- Компонент для защиты роутов (остается без изменений) ---
 function ProtectedRoute({ children }: { children: JSX.Element }) {
   const token = localStorage.getItem('token');
-  // Простая проверка токена. В реальном приложении может быть сложнее
   if (!token) {
-    // Если токена нет, перенаправляем на страницу входа
     return <Navigate to="/auth" replace />;
   }
-  return children; // Если токен есть, рендерим дочерний компонент (ChatPage)
+  return children;
 }
 
-// Компонент для страниц, доступных только неавторизованным пользователям
+// --- Компонент для неавторизованных (остается без изменений) ---
 function PublicOnlyRoute({ children }: { children: JSX.Element }) {
   const token = localStorage.getItem('token');
   if (token) {
-    // Если токен есть, перенаправляем на страницу чата
     return <Navigate to="/chat" replace />;
   }
-  return children; // Если токена нет, рендерим (AuthPage)
+  return children;
 }
 
-
-function NotFoundPage() {
-    return (
-        <div style={{ textAlign: 'center', padding: '50px' }}>
-            <h1>404 - Страница не найдена</h1>
-            <p>Извините, страница, которую вы ищете, не существует.</p>
-            {/* Можно добавить ссылку на главную */}
-        </div>
-    );
+// --- Компонент-обертка для скроллящихся страниц ---
+// Этот компонент нужен, чтобы разрешить скролл для конкретных страниц,
+// в то время как глобальные стили (index.css) запрещают скролл для body/#root.
+function ScrollablePage({ children }: { children: JSX.Element }) {
+  return (
+    <div style={{
+        flex: 1, // Занимает все доступное пространство в flex-родителе (#root)
+        overflowY: 'auto', // !!! Разрешает вертикальный скролл ТОЛЬКО для этой обертки !!!
+        overflowX: 'hidden', // Запрещает горизонтальный
+        display: 'flex', // Позволяет внутреннему контенту корректно работать с высотой
+        flexDirection: 'column'
+    }}>
+      {children}
+    </div>
+  );
 }
 
-
+// --- Основной компонент приложения ---
 function App() {
   return (
-    // <div className="App"> {/* Обертка App часто не нужна, стили лучше применять к страницам */}
-      <Routes>
-          {/* Главная страница (лендинг) - доступна всем */}
-          <Route path="/" element={<HomePage />} />
+    // Обертка <div className="App"> не нужна, #root уже является контейнером
+    <Routes>
+      {/* Главная страница (лендинг) - оборачиваем в ScrollablePage */}
+      <Route
+        path="/"
+        element={
+          <ScrollablePage>
+            <HomePage />
+          </ScrollablePage>
+        }
+      />
 
-          {/* Страница авторизации - доступна только НЕавторизованным */}
-          <Route
-            path="/auth"
-            element={
-              <PublicOnlyRoute>
-                <AuthPage />
-              </PublicOnlyRoute>
-            }
-          />
+      {/* Страница авторизации - оборачиваем в ScrollablePage */}
+      <Route
+        path="/auth"
+        element={
+          <PublicOnlyRoute>
+            <ScrollablePage>
+              <AuthPage />
+            </ScrollablePage>
+          </PublicOnlyRoute>
+        }
+      />
 
-          {/* Страница чата - доступна только авторизованным */}
-          <Route
-            path="/chat"
-            element={
-              <ProtectedRoute>
-                <ChatPage />
-              </ProtectedRoute>
-            }
-          />
+      {/* Страница чата - НЕ оборачиваем, т.к. она сама управляет своим макетом и скроллом */}
+      <Route
+        path="/chat"
+        element={
+          <ProtectedRoute>
+            <ChatPage />
+          </ProtectedRoute>
+        }
+      />
 
-          {/* Маршрут для всего остального (404) */}
-          <Route path="*" element={<NotFoundPage />} />
-      </Routes>
-    // </div>
+      {/* Страница 404 - оборачиваем в ScrollablePage */}
+      <Route
+        path="*"
+        element={
+          <ScrollablePage>
+            <NotFoundPage />
+          </ScrollablePage>
+        }
+      />
+    </Routes>
   );
 }
 
